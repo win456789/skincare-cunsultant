@@ -210,7 +210,7 @@ if user_input := st.chat_input("พิมพ์ปรึกษาปัญหา
             for attempt in range(max_retries):
                 try:
                     response = st.session_state.client.models.generate_content(
-                        model="gemini-2.5-flash",
+                        model="gemini-3.5-flash-lite",
                         contents=user_input,
                         config=types.GenerateContentConfig(
                             system_instruction=system_prompt,
