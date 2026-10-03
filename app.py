@@ -159,10 +159,11 @@ with st.sidebar:
             else:
                 st.error("⚠️ กรุณากรอกชื่อในช่อง 'กรอกชื่อใหม่' ก่อนกดบันทึกครับ")
                 
-        st.divider()
-        if st.button("🧹 ล้างประวัติการคุยทั้งหมด", use_container_width=True):
-            st.session_state.messages = []
-            st.rerun()
+        
+st.divider()
+if st.button("🧹 ล้างประวัติการคุยทั้งหมด", use_container_width=True):
+    st.session_state.messages = []
+    st.rerun()
 # ==========================================
 # 4. ประกอบ System Prompt (ข้อมูลโปรไฟล์ + คลังสินค้า Supabase)
 # ==========================================
