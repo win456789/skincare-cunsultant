@@ -147,7 +147,7 @@ with st.sidebar:
         selected_skin_types = st.multiselect("สภาพผิว:", options=skin_options, default=default_type_list)
         skin_concerns = st.text_input("ปัญหาผิวหลัก:", value=default_concerns)
         allergies = st.text_input("ส่วนผสมที่แพ้ / อยากเลี่ยง:", value=default_allergies)
-        
+
         submitted = st.form_submit_button("💾 บันทึกโปรไฟล์")
         if submitted:
             if user_name and user_name.strip() != "" and user_name != "➕ สร้างโปรไฟล์ใหม่":
@@ -158,7 +158,11 @@ with st.sidebar:
                 st.rerun()
             else:
                 st.error("⚠️ กรุณากรอกชื่อในช่อง 'กรอกชื่อใหม่' ก่อนกดบันทึกครับ")
-
+                
+        st.divider()
+        if st.button("🧹 ล้างประวัติการคุยทั้งหมด", use_container_width=True):
+            st.session_state.messages = []
+            st.rerun()
 # ==========================================
 # 4. ประกอบ System Prompt (ข้อมูลโปรไฟล์ + คลังสินค้า Supabase)
 # ==========================================
