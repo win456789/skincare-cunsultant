@@ -14,7 +14,7 @@ from database import (
     save_feedback, 
     save_or_update_user,
     get_all_products_context,
-    get_few_shot_examples  # 🟢 เพิ่มฟังก์ชันดึงตัวอย่าง Few-Shot
+    get_few_shot_examples
 )
 
 DB_NAME = "skincare_app.db"
@@ -36,7 +36,6 @@ def init_db():
             timestamp DATETIME DEFAULT CURRENT_TIMESTAMP
         )
     """)
-    # เพิ่มคอลัมน์ให้อัตโนมัติในกรณีที่มีตารางเดิมอยู่แล้ว
     try:
         cursor.execute("ALTER TABLE chat_history ADD COLUMN device_id TEXT")
         cursor.execute("ALTER TABLE chat_history ADD COLUMN user_name TEXT")
@@ -96,7 +95,7 @@ base_system_prompt = """
 🚨 [STRICT RULES - กฎเหล็ก]:
 1. DATABASE ONLY: แนะนำเฉพาะสินค้าที่มีอยู่ใน [รายการสินค้าสกินแคร์ในคลังของเรา] เท่านั้น ห้ามแนะนำสินค้านอกคลังเด็ดขาด หากไม่มีหมวดที่ต้องการหรือเกินงบ ให้แจ้งผู้ใช้ตรงๆ
 2. PROFILE & BUDGET CONSTRAINTS: ตรวจสอบสภาพผิว ปัญหาผิว และสารแพ้จาก [ข้อมูลโปรไฟล์ผู้ใช้งานปัจจุบัน] ห้ามแนะนำสินค้าที่มีสารแพ้ หรือราคาสูงกว่า [งบประมาณสูงสุดต่อชิ้น] เด็ดขาด
-3. NO DUPLICATE ROLES: ห้ามแนะนำสินค้าหมวดเดียวกันซ้ำกันในเซต (**ยกเว้น Serum มีได้มากกว่า 1 ตัว**)
+3. NO DUPLICATE ROLES: ห้ามแนะนำสินค้าหมวดเดียวกันซ้ำกันในเซต (ยกเว้น Serum มีได้มากกว่า 1 ตัว)
 4. PRODUCT ROTATION: หากมีสินค้าที่ตรงเงื่อนไขหลายตัว ให้กระจายการแนะนำแบรนด์สลับกันอย่างหลากหลาย ห้ามยึดติดกับตัวเลือกเดิมซ้ำๆ
 5. OUTDOOR/BEACH: กรณีทำกิจกรรมกลางแจ้ง/ไปทะเล ต้องเลือกเฉพาะกันแดดที่มีระบุว่า "กันน้ำ" หรือ "แดดแรง" เท่านั้น
 6. MEDICAL DISCLAIMER: หากพบอาการโรคผิวหนังรุนแรง ให้แนะนำพบแพทย์ผิวหนังเท่านั้น
@@ -108,7 +107,7 @@ base_system_prompt = """
   ![ชื่อสินค้า](Image_URL)
   **ชื่อสินค้า** (แบรนด์) | ราคา: XX บาท | สารสำคัญ: XX
   [🛒 สั่งซื้อบน Shopee](URL) (ดึงลิงก์จาก Database เท่านั้น)
-   """
+"""
 
 components.html("""
     <script>
@@ -205,13 +204,15 @@ with st.sidebar:
         clear_chat_history(device_id, user_name)
         st.session_state.messages = []
         st.rerun()
-    # เพิ่มใน st.sidebar ของ app.py
-with st.sidebar.expander("🛠️ Debug: Prompt + Few-Shot ล่าสุด"):
-    few_shot_check = get_few_shot_examples(limit=3)
-    if few_shot_check:
-        st.code(few_shot_check, language="markdown")
-    else:
-        st.warning("⚠️ ยังไม่มีเคส 👍 ใน Supabase หรือยังดึงข้อมูลไม่ได้")
+
+    # 🟢 กล่อง Debug เช็ก Few-Shot ใน Sidebar
+    st.divider()
+    with st.expander("🛠️ Debug: Prompt + Few-Shot ล่าสุด"):
+        few_shot_check = get_few_shot_examples(limit=2)
+        if few_shot_check:
+            st.code(few_shot_check, language="markdown")
+        else:
+            st.warning("⚠️ ยังไม่มีเคส Feedback ใน Supabase")
 
 # ==========================================
 # 4. ประกอบ System Prompt (ข้อมูลโปรไฟล์ + คลังสินค้า Supabase)
@@ -245,7 +246,6 @@ system_prompt = f"{base_system_prompt}\n{user_context}\n{products_context}"
 # ==========================================
 # 5. จัดการ Chat Session & Gemini API Client
 # ==========================================
-# 🟢 สลับประวัติแชตอัตโนมัติตาม Device ID + User Name ปัจจุบัน
 profile_key = f"{device_id}_{user_name}"
 if st.session_state.get("current_profile_key") != profile_key:
     st.session_state.current_profile_key = profile_key
@@ -280,7 +280,6 @@ for idx, message in enumerate(st.session_state.messages):
                             st.rerun()
 
 # 5.2 กล่องรับข้อความใหม่ และประมวลผล Gemini API
-few_shot_context = get_few_shot_examples(limit=1)
 if user_input := st.chat_input("พิมพ์ปรึกษาปัญหาผิว หรือถามเรื่องสกินแคร์ที่นี่..."):
     # 1. บันทึกข้อความผู้ใช้ลง SQLite และ session_state
     save_message(device_id, user_name, "user", user_input)
@@ -293,8 +292,8 @@ if user_input := st.chat_input("พิมพ์ปรึกษาปัญหา
     # 3. วาดช่องข้อความ AI พร้อมสถานะกำลังคิด
     with st.chat_message("assistant"):
         with st.spinner("ผู้ช่วยกำลังคิดคำตอบ..."):
-            # 🟢 ดึงตัวอย่าง Few-Shot ล่าสุด 3 ข้อความจาก Supabase
-            few_shot_context = get_few_shot_examples(limit=3)
+            # 🟢 ดึง Dynamic Few-Shot
+            few_shot_context = get_few_shot_examples(limit=2)
             dynamic_system_prompt = f"{system_prompt}\n{few_shot_context}"
 
             max_retries = 3
@@ -304,8 +303,8 @@ if user_input := st.chat_input("พิมพ์ปรึกษาปัญหา
                         model="gemini-3.5-flash-lite",
                         contents=user_input,
                         config=types.GenerateContentConfig(
-                            system_instruction=dynamic_system_prompt, # 🟢 ใช้ Prompt ที่รวม Few-Shot เรียบร้อยแล้ว
-                            temperature=0.8,
+                            system_instruction=dynamic_system_prompt,
+                            temperature=0.7,  # 🟢 ปรับลดเป็น 0.4 เพื่อความแม่นยำในการคุมกฎคลังสินค้า
                         )
                     )
                     
@@ -322,5 +321,4 @@ if user_input := st.chat_input("พิมพ์ปรึกษาปัญหา
                     st.error(f"เกิดข้อผิดพลาด: {e}")
                     break
 
-    # 4. รีเฟรชหน้าเว็บ เพื่อให้ระบบโหลดประวัติและแสดงปุ่ม Feedback ครบถ้วน
     st.rerun()
