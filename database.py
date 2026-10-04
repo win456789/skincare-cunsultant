@@ -623,9 +623,31 @@ def get_corrected_examples(limit=3):
 # ฟังก์ชันดึงตัวอย่าง Few-Shot จาก feedback_logs
 # ==========================================
 def get_few_shot_examples(limit=3):
-    """ดึงตัวอย่างคำถาม-คำตอบที่ได้รับ 👍 (Rating = 1) มาใช้เป็น Few-Shot Prompting"""
+    """ดึงทั้งเคส 👍 และเคส 👎 พร้อมเหตุผล มาประกอบเป็น Dynamic Few-Shot"""
+    context = ""
+
+    # 🟢 1. ดึงเคส 👎 ที่มีเหตุผล มาสร้างเป็น "กฎข้อควรระวังจากผู้ใช้"
     try:
-        res = (
+        bad_res = (
+            supabase.table("feedback_logs")
+            .select("user_input, reason")
+            .eq("rating", -1)
+            .neq("reason", "")
+            .order("id", desc=True)
+            .limit(limit)
+            .execute()
+        )
+        bad_data = bad_res.data or []
+        if bad_data:
+            context += "\n\n🚨 **ข้อผิดพลาดในอดีตที่ผู้ใช้เคยติไว้ (ห้ามทำผิดซ้ำเด็ดขาด)**:\n"
+            for item in bad_data:
+                context += f"- เมื่อผู้ใช้ถาม: \"{item['user_input']}\" -> ผู้ใช้เคยระบุข้อผิดพลาดว่า: \"{item['reason']}\" (ระวังอย่าให้เกิดปัญหานี้อีก)\n"
+    except Exception as e:
+        print(f"⚠️ เกิดข้อผิดพลาดในการดึง Negative Feedback: {e}")
+
+    # 🟢 2. ดึงเคส 👍 มาเป็นตัวอย่างรูปแบบคำตอบที่ดี
+    try:
+        good_res = (
             supabase.table("feedback_logs")
             .select("user_input, ai_response")
             .eq("rating", 1)
@@ -633,18 +655,12 @@ def get_few_shot_examples(limit=3):
             .limit(limit)
             .execute()
         )
-        
-        data = res.data or []
-        if not data:
-            return ""
-
-        examples_text = "\n\n🚨 **ตัวอย่างการตอบที่ดีที่ได้รับความพึงพอใจจากผู้ใช้ (Few-Shot Examples)**:\n"
-        for idx, item in enumerate(data, 1):
-            examples_text += f"ตัวอย่างที่ {idx}:\n"
-            examples_text += f"- คำถามของผู้ใช้: {item['user_input']}\n"
-            examples_text += f"- คำตอบที่ถูกต้องและเหมาะสม: {item['ai_response']}\n\n"
-            
-        return examples_text
+        good_data = good_res.data or []
+        if good_data:
+            context += "\n✨ **ตัวอย่างแนวทางการตอบที่ดี (Positive Examples)**:\n"
+            for idx, item in enumerate(good_data, 1):
+                context += f"ตัวอย่างที่ {idx}:\n- คำถาม: {item['user_input']}\n- คำตอบที่ถูกต้อง: {item['ai_response']}\n\n"
     except Exception as e:
-        print(f"⚠️ เกิดข้อผิดพลาดในการดึง Few-Shot Examples: {e}")
-        return ""
+        print(f"⚠️ เกิดข้อผิดพลาดในการดึง Positive Feedback: {e}")
+
+    return context
