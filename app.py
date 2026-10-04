@@ -6,14 +6,15 @@ from google import genai
 from google.genai import types
 from google.genai.errors import ServerError, APIError
 
-# ดึงฟังก์ชันจัดการโปรไฟล์และคลังสินค้าจาก Supabase (database.py)
+# 🟢 ดึงฟังก์ชันจัดการโปรไฟล์ คลังสินค้า และ Dynamic Few-Shot จาก Supabase (database.py)
 from database import (
     delete_user_profile, 
     get_all_usernames, 
     get_user_profile,
     save_feedback, 
     save_or_update_user,
-    get_all_products_context
+    get_all_products_context,
+    get_few_shot_examples  # 🟢 เพิ่มฟังก์ชันดึงตัวอย่าง Few-Shot
 )
 
 DB_NAME = "skincare_app.db"
@@ -289,13 +290,17 @@ if user_input := st.chat_input("พิมพ์ปรึกษาปัญหา
     save_message(device_id, user_name, "user", user_input)
     st.session_state.messages.append({"role": "user", "content": user_input})
 
-    # 🟢 2. วาดข้อความของผู้ใช้ค้างไว้บนหน้าจอทันที
+    # 2. วาดข้อความของผู้ใช้ค้างไว้บนหน้าจอทันที
     with st.chat_message("user"):
         st.markdown(user_input)
 
-    # 🟢 3. วาดช่องข้อความ AI พร้อมสถานะกำลังคิด
+    # 3. วาดช่องข้อความ AI พร้อมสถานะกำลังคิด
     with st.chat_message("assistant"):
         with st.spinner("ผู้ช่วยกำลังคิดคำตอบ..."):
+            # 🟢 ดึงตัวอย่าง Few-Shot ล่าสุด 3 ข้อความจาก Supabase
+            few_shot_context = get_few_shot_examples(limit=3)
+            dynamic_system_prompt = f"{system_prompt}\n{few_shot_context}"
+
             max_retries = 3
             for attempt in range(max_retries):
                 try:
@@ -303,7 +308,7 @@ if user_input := st.chat_input("พิมพ์ปรึกษาปัญหา
                         model="gemini-3.5-flash-lite",
                         contents=user_input,
                         config=types.GenerateContentConfig(
-                            system_instruction=system_prompt,
+                            system_instruction=dynamic_system_prompt, # 🟢 ใช้ Prompt ที่รวม Few-Shot เรียบร้อยแล้ว
                             temperature=0.3,
                         )
                     )

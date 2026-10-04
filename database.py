@@ -548,7 +548,7 @@ if __name__ == "__main__":
         "ผิวแพ้ง่าย, ผิวอ่อนออน, ผิวเป็นสิว, ผิวแห้ง, เหมาะกับทุกผิว, ผิวเสียสมดุล, ผิวระคายเคืองง่าย", 
         "Aqua, Niacinamide, Propanediol, Ethoxydiglycol, Butylene Glycol, Glycerin, Ammonium Acryloyldimethyltaurate/VP Copolymer,Arisaema Amurense Extract, Ethyhexylglycerin, Capparis Spinosa Fruit Extract, Citrus Aurantium Tachibana Peel Extract, Artemisia Capillaris Extract, Pueraria Lobata Root Extract, Citrus (Tangerine) Peel Extract, Glycine Soja(soybean)Seed Extract, Sophora Flavescens Root Extract, Glycyrrhiza Inflata Root Extract, Humulus Lupulus Extract, Maclura Cochinchinensis Leaf Extract, Salix Alba (willow) Bark Extract, Opuntia Ficus-indica Stem Extract, 1,2-Hexanediol, Solanum Lycopersicum (Tomata)Stem Fruit Extract, Cystoseira Tamariscifolia Extract, Scutellaria Baicalensis Root Extract, Phenoxyethanol, Maltodextrin, Olea (Olive) Leaf Extract, Disodium EDTA, Citric Acid, Ceramide NP, Hydrogenated Lecithin, Glyceryl Stearate, Dipropylene Glycol, Silica.",
         690.00,
-        "มอยซ์เจอไรเซอร์เนื้อเซรั่มบางเบาไม่เหนอะหนะ ช่วยลดสาเหตุหลักๆในการเกิดสิว และป้องกันการเกิดสิวใหม่ด้วยการปรับสมดุลย์ไมโครไบโอมหรือแบคทีเรียบนผิวให้เป็นปกติมากยิ่งขึ้นด้วย Seboclear-mp ที่มีสาร bioflavonoids ช่วยลดการอักเสบ ต่อต้านอนุมูลอิสระ ลดการทำงานของต่อมไขมัน พร้อมส่วนผสมที่สำคัญอย่าง Niacinamide Ceramide Calisensix และ Senseryn ที่ช่วยการฟื้นฟูเกราะป้องกันผิว ลดการระคายเคือง แสบแดง หรืออาการแพ้ต่างๆ"
+        "มอยซ์เจอไรเซอร์เนื้อเซรั่มบางเบาไม่เหนอะหนะ ช่วยลดสาเหตุหลักๆในการเกิดสิว และป้องกันการเกิดสิวใหม่ด้วยการปรับสมดุลย์ไมโครไบโอมหรือแบคทีเรียบนผิวให้เป็นปกติมากยิ่งขึ้นด้วย Seboclear-mp ที่มีสาร bioflavonoids ช่วยลดการอักเสบ ต่อต้านอนุมูลอิสระ ลดการทำงานของต่อมไขมัน พร้อมส่วนผสมที่สำคัญอย่าง Niacinamide Ceramide Calisensix และ Senseryn ที่ช่วยการฟื้นฟูเกราะป้องกันผิว ลดการระคายเคือง แสบแดง หรืออาการแพ้ต่างๆ",
         "https://down-th.img.susercontent.com/file/th-11134207-81zto-mmq3c7a1zwg153",
         "https://s.shopee.co.th/4qG9UDiqsi"
     )
@@ -559,6 +559,7 @@ if __name__ == "__main__":
         "ิผิวมัน ผิวผสม ผิวแพ้ง่าย ผิวบอบบาง ผิวเป็นสิว",
         "Water, Butylene Glycol, Glycerin, Pentaerythrityl Stearate ​Caprate ​Caprylate ​Adipate, 1,2-Hexanediol, Cetearyl Alcohol, Ammonium Acryloyldimethyltaurate​ Copolymer, Caprylic ​Capric Glycerides, Glyceryl Stearate Citrate, Sorbitan Stearate, Stearic Acid, Carbomer, Myristoyl/​Palmitoyl Oxostearamide/​Arachamide MEA, Sea Water, Phytosterols, Helianthus Annuus (Sunflower) Seed Oil, Palmitoyl Palmitamide Mea, Bis-Capryloyloxypalmitamido Isopropanol, N-Decanoyl Serinol, Sodium Hyaluronate, Tanacetum Annuum Flower Oil, Anthemis Nobilis Flower Extract, Salvia Officinalis (Sage) Oil, Pogostemon Cablin Oil, Elettaria Cardamomum Seed Oil, Mentha Arvensis Leaf Oil, Anthemis Nobilis Flower Oil, Juniperus Mexicana Oil, Leucine, Azulene, Lysine, Phenylalanine, Threonine, Valine",
         390.00,
+        "โลชั่นเนื้อเจลบางเบา ให้ความชุ่มชื้น ปลอบประโลมผิวแพ้ง่าย"
         "https://incidecoder-content.storage.googleapis.com/1a39793f-25e6-497f-947b-6233d25290ef/products/atopalm-soothing-gel-lotion-5/atopalm-soothing-gel-lotion-5_front_photo_300x300@2x.webp",
         "https://s.shopee.co.th/1qcXv86SMF"
     )
@@ -593,3 +594,40 @@ def save_feedback(user_input, ai_response, rating, user_name="anonymous", reason
         print(f"✅ บันทึก Feedback ({rating}) เรียบร้อยแล้ว")
     except Exception as e:
         print(f"❌ บันทึก Feedback ล้มเหลว: {e}")
+
+def get_corrected_examples(limit=3):
+    """ดึงเคสที่เคยแก้คำตอบแล้วมาเป็นตัวอย่าง Few-Shot"""
+    res = supabase.table("feedback_logs").select("user_input, ai_response").eq("rating", -1).limit(limit).execute()
+    examples = ""
+    for row in (res.data or []):
+        examples += f"\n- คำถาม: {row['user_input']}\n  คำตอบที่ถูกต้อง: {row['ai_response']}\n"
+    return examples
+# ==========================================
+# ฟังก์ชันดึงตัวอย่าง Few-Shot จาก feedback_logs
+# ==========================================
+def get_few_shot_examples(limit=3):
+    """ดึงตัวอย่างคำถาม-คำตอบที่ได้รับ 👍 (Rating = 1) มาใช้เป็น Few-Shot Prompting"""
+    try:
+        res = (
+            supabase.table("feedback_logs")
+            .select("user_input, ai_response")
+            .eq("rating", 1)
+            .order("id", desc=True)
+            .limit(limit)
+            .execute()
+        )
+        
+        data = res.data or []
+        if not data:
+            return ""
+
+        examples_text = "\n\n🚨 **ตัวอย่างการตอบที่ดีที่ได้รับความพึงพอใจจากผู้ใช้ (Few-Shot Examples)**:\n"
+        for idx, item in enumerate(data, 1):
+            examples_text += f"ตัวอย่างที่ {idx}:\n"
+            examples_text += f"- คำถามของผู้ใช้: {item['user_input']}\n"
+            examples_text += f"- คำตอบที่ถูกต้องและเหมาะสม: {item['ai_response']}\n\n"
+            
+        return examples_text
+    except Exception as e:
+        print(f"⚠️ เกิดข้อผิดพลาดในการดึง Few-Shot Examples: {e}")
+        return ""
