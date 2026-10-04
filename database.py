@@ -46,13 +46,11 @@ def get_all_products_context(max_budget=0):
     response = supabase.table("products").select("*").execute()
     products = response.data or []
     
-    # แปลงค่างบเป็น int ป้องกัน Error
     try:
         max_budget = int(max_budget) if max_budget else 0
     except (ValueError, TypeError):
         max_budget = 0
     
-    # Hard Filtering คัดกรองราคาสินค้า
     if max_budget > 0:
         filtered_products = []
         for p in products:
@@ -66,7 +64,9 @@ def get_all_products_context(max_budget=0):
     
     context_text = f"\n[รายการสินค้าสกินแคร์ในคลังของเราที่ราคาไม่เกิน {max_budget} บาท]:\n" if max_budget > 0 else "\n[รายการสินค้าสกินแคร์ในคลังของเราทั้งหมด]:\n"
     for p in products:
-        context_text += f"- ชื่อ: {p.get('name')}, แบรนด์: {p.get('brand')}, หมวดหมู่: {p.get('category')}, ราคา: {p.get('price')} บาท, ลิงก์: {p.get('shopee_url')}, รูปภาพ: {p.get('image_url')}\n"
+        # 🟢 ดึงลิงก์โดยรองรับทั้ง shopee_url และ purchase_channel
+        link = p.get('shopee_url') or p.get('purchase_channel') or '#'
+        context_text += f"- ชื่อ: {p.get('name')}, แบรนด์: {p.get('brand')}, หมวดหมู่: {p.get('category')}, ราคา: {p.get('price')} บาท, ลิงก์: {link}, รูปภาพ: {p.get('image_url')}\n"
         
     return context_text, len(products)
 
@@ -134,7 +134,7 @@ if __name__ == "__main__":
     )
 
     add_new_product(
-        "MizuMi Cica Soothing Moisture Gel",
+        "MizuMi Cica Soothing Moisture xGel",
         "MizuMi",
         "Moisturizer",
         "เหมาะเฉพาะผิวมัน, เป็นสิวง่าย",
@@ -143,6 +143,18 @@ if __name__ == "__main__":
         "ช่วยปลอบประโลมผิว ลดการระคายเคือง และฟื้นฟูผิวให้แข็งแรง",
         "https://s2.konvy.com/static/team/2023/0209/16759294666766.jpg",
         "https://s.shopee.co.th/9fLNGf44sj"
+    )
+
+    add_new_product(
+        "MizuMi Water Serum Sunscreen SPF50+",
+        "MizuMi",
+        "Sunscreen",
+        "ทุกสภาพผิว, ผิวแพ้ง่าย, ผิวแห้ง, เหมาะสำหรับใช้ชีวิตประจำวัน, ไม่กันน้ำ, ไม่แดดจัด",
+        "Physical Sunscreen Filter",
+        890.00,
+        "บางเบา ซึมไว ไม่มีสารกันแดดแบบเคมี น้ำมัน น้ำหอม แอลกอฮอล์ พาราเบน และสีสังเคราะห์ ไม่ทำให้อุดตันผิว ลดการเกิดสิว",
+        "https://s2.konvy.com/static/team/2026/0220/17715725746988.jpg",
+        "https://s.shopee.co.th/905gTNZWWF"
     )
 
     add_new_product(
@@ -269,7 +281,7 @@ if __name__ == "__main__":
         "SRICHAND กันแดดสกินแคร์ สูตรคุมมันคุมสิว ซันลูชั่น แอคเน่",
         "SRICHAND",
         "Sunscreen",
-        "ผิวมัน, ผิวเป็นสิว,แดดปกติ",
+        "ผิวมัน, ผิวเป็นสิว,แดดปกติ, ไม่กันน้ำ, ไม่แดดจัด",
         "Salicylic Acid Sphere, Gluconolactone, Natural Mineral Marine Wate",
         598.00,
         "กันแดดสูตรแอคเน่แคร์ ช่วยปกป้องผิวจากรังสี UVA และ UVB เนื้อบางเบาเกลี่ยง่าย ลดความมันส่วนเกิน ล้างออกง่าย",
@@ -560,3 +572,21 @@ if __name__ == "__main__":
         "https://medias.watsons.co.th/publishing/WTCTH-321053-swatch-zoom.jpg?version=1758137429",
         "https://s.shopee.co.th/1BMr83rY7D"
     )
+
+# ==========================================
+# 4. ฟังก์ชันจัดการ Feedback (👍 / 👎)
+# ==========================================
+def save_feedback(user_input, ai_response, rating, user_name="anonymous", reason=""):
+    """บันทึกประเมินคำตอบ AI พร้อมเหตุผลลง Supabase"""
+    try:
+        data = {
+            "user_input": user_input,
+            "ai_response": ai_response,
+            "rating": rating,
+            "user_name": user_name,
+            "reason": reason
+        }
+        supabase.table("feedback_logs").insert(data).execute()
+        print(f"✅ บันทึก Feedback ({rating}) เรียบร้อยแล้ว")
+    except Exception as e:
+        print(f"❌ บันทึก Feedback ล้มเหลว: {e}")

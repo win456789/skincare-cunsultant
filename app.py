@@ -10,7 +10,8 @@ from google.genai.errors import ServerError, APIError
 from database import (
     delete_user_profile, 
     get_all_usernames, 
-    get_user_profile, 
+    get_user_profile,
+    save_feedback, 
     save_or_update_user,
     get_all_products_context
 )
@@ -19,7 +20,7 @@ DB_NAME = "skincare_app.db"
 
 
 # ==========================================
-# 1. ฟังก์ชันจัดการ Chat History (SQLite)
+# 1. ฟังก์ชันจัดการ Chat History (SQLite - แยกตาม Device & User)
 # ==========================================
 def init_db():
     conn = sqlite3.connect(DB_NAME)
@@ -27,28 +28,54 @@ def init_db():
     cursor.execute("""
         CREATE TABLE IF NOT EXISTS chat_history (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
+            device_id TEXT,
+            user_name TEXT,
             role TEXT NOT NULL,
             content TEXT NOT NULL,
             timestamp DATETIME DEFAULT CURRENT_TIMESTAMP
         )
     """)
+    # เพิ่มคอลัมน์ให้อัตโนมัติในกรณีที่มีตารางเดิมอยู่แล้ว
+    try:
+        cursor.execute("ALTER TABLE chat_history ADD COLUMN device_id TEXT")
+        cursor.execute("ALTER TABLE chat_history ADD COLUMN user_name TEXT")
+    except sqlite3.OperationalError:
+        pass
     conn.commit()
     conn.close()
 
-def save_message(role: str, content: str):
+def save_message(device_id: str, user_name: str, role: str, content: str):
     conn = sqlite3.connect(DB_NAME)
     cursor = conn.cursor()
-    cursor.execute("INSERT INTO chat_history (role, content) VALUES (?, ?)", (role, content))
+    cursor.execute(
+        "INSERT INTO chat_history (device_id, user_name, role, content) VALUES (?, ?, ?, ?)",
+        (device_id, user_name, role, content)
+    )
     conn.commit()
     conn.close()
 
-def load_chat_history():
+def load_chat_history(device_id: str, user_name: str):
+    if not device_id or not user_name:
+        return []
     conn = sqlite3.connect(DB_NAME)
     cursor = conn.cursor()
-    cursor.execute("SELECT role, content FROM chat_history ORDER BY id ASC")
+    cursor.execute(
+        "SELECT role, content FROM chat_history WHERE device_id = ? AND user_name = ? ORDER BY id ASC",
+        (device_id, user_name)
+    )
     rows = cursor.fetchall()
     conn.close()
     return [{"role": row[0], "content": row[1]} for row in rows]
+
+def clear_chat_history(device_id: str, user_name: str):
+    conn = sqlite3.connect(DB_NAME)
+    cursor = conn.cursor()
+    cursor.execute(
+        "DELETE FROM chat_history WHERE device_id = ? AND user_name = ?",
+        (device_id, user_name)
+    )
+    conn.commit()
+    conn.close()
 
 init_db()
 
@@ -75,7 +102,7 @@ base_system_prompt = """
    - ห้ามแนะนำสินค้าหมวดหมู่เดียวกันซ้ำกันในเซตเดียว (เช่น ห้ามแนะนำ Moisturizer 2 ตัว) ยกเว้น Serum แนะนำได้มากกว่า 1 ตัว
 3. **การแสดงผลสินค้า**:
    - แสดงรูปภาพสินค้าด้วยรูปแบบ Markdown เสมอ: `![ชื่อสินค้า](Image_URL)`
-   - ระบุแบรนด์, ราคา, สารสำคัญ
+   - ระบุชื่อสินค้า, ระบุแบรนด์, ราคา, สารสำคัญ
    - ให้เพิ่ม URL Shopee ให้ทำเป็น Markdown Link เสมอ เช่น `[🛒 สั่งซื้อบน Shopee](URL)` **ห้ามลืมใส่เด็ดขาด โดยเอามาจาก database เท่านั้น**
 4. **ความสำคัญของโปรไฟล์**:
    - เรียงลำดับความสำคัญข้อมูลจากซ้ายไปขวาเสมอ และให้เลือกสินค้าที่ตอบโจทย์ปัญหานั้นมากที่สุด ห้ามลืมตรวจทานโดยทำการตรวจทานอย่างน้อย 10 ครั้ง
@@ -138,6 +165,7 @@ with st.sidebar:
         user_name = selected_option
         if st.button(f"🗑️ ลบโปรไฟล์ '{user_name}'", type="secondary", use_container_width=True):
             delete_user_profile(device_id, user_name)
+            clear_chat_history(device_id, user_name)
             st.success(f"ลบโปรไฟล์ '{user_name}' เรียบร้อย!")
             time.sleep(1)
             st.rerun()
@@ -171,7 +199,7 @@ with st.sidebar:
             else:
                 st.error("⚠️ กรุณากรอกชื่อในช่อง 'กรอกชื่อใหม่' ก่อนกดบันทึกครับ")
     
-    # 🟢 ตัวเลื่อนงบประมาณ Real-time (อยู่นอก st.form เพื่อให้เลื่อนแล้วกรองทันที)
+    # ตัวเลื่อนงบประมาณ Real-time
     st.divider()
     max_budget = st.slider(
         "งบประมาณสูงสุดต่อชิ้น (บาท):",
@@ -182,9 +210,10 @@ with st.sidebar:
         key="live_budget"
     )
 
-    # 🟢 ปุ่มล้างประวัติการสนทนา (อยู่ใน Sidebar)
+    # ปุ่มล้างประวัติการสนทนาเฉพาะโปรไฟล์นี้
     st.divider()
-    if st.button("🧹 ล้างประวัติการคุยทั้งหมด", use_container_width=True):
+    if st.button("🧹 ล้างประวัติการคุยของโปรไฟล์นี้", use_container_width=True):
+        clear_chat_history(device_id, user_name)
         st.session_state.messages = []
         st.rerun()
 
@@ -206,11 +235,10 @@ if current_profile:
 else:
     user_context = ""
 
-# 🟢 ดึงข้อมูลสินค้าจาก Supabase โดยส่งงบจาก slider (max_budget) เข้าไปกรอง Real-time
+# ดึงข้อมูลสินค้าจาก Supabase
 user_budget = max_budget
 products_context, product_count = get_all_products_context(max_budget=user_budget)
 
-# แสดงแถบ Debug บอกจำนวนสินค้าใน Sidebar
 st.sidebar.caption(f"🔍 Debug: งบปัจจุบัน = {user_budget} บาท | สินค้าที่ผ่านกรอง = {product_count} ชิ้น")
 
 if product_count == 0 and user_budget > 0:
@@ -221,51 +249,70 @@ system_prompt = f"{base_system_prompt}\n{user_context}\n{products_context}"
 # ==========================================
 # 5. จัดการ Chat Session & Gemini API Client
 # ==========================================
-if "messages" not in st.session_state:
-    st.session_state.messages = []
+# 🟢 สลับประวัติแชตอัตโนมัติตาม Device ID + User Name ปัจจุบัน
+profile_key = f"{device_id}_{user_name}"
+if st.session_state.get("current_profile_key") != profile_key:
+    st.session_state.current_profile_key = profile_key
+    st.session_state.messages = load_chat_history(device_id, user_name)
 
 if "client" not in st.session_state:
     st.session_state.client = genai.Client(api_key=API_KEY)
 
-# แสดงประวัติการคุย
-for message in st.session_state.messages:
+# 5.1 แสดงประวัติการคุยเฉพาะโปรไฟล์ปัจจุบัน
+for idx, message in enumerate(st.session_state.messages):
     with st.chat_message(message["role"]):
         st.markdown(message["content"])
-
-# กล่องรับข้อความ
-if user_input := st.chat_input("พิมพ์ปรึกษาปัญหาผิว หรือถามเรื่องสกินแคร์ที่นี่..."):
-    save_message("user", user_input)
-    st.session_state.messages.append({"role": "user", "content": user_input})
-    with st.chat_message("user"):
-        st.markdown(user_input)
-
-    with st.chat_message("assistant"):
-        with st.spinner("ผู้ช่วยกำลังคิดคำตอบ..."):
-            max_retries = 3
-            success = False
+        
+        if message["role"] == "assistant":
+            fb_key = f"fb_{idx}"
+            fb = st.feedback("thumbs", key=fb_key)
             
-            for attempt in range(max_retries):
-                try:
-                    response = st.session_state.client.models.generate_content(
-                        model="gemini-3.5-flash-lite",
-                        contents=user_input,
-                        config=types.GenerateContentConfig(
-                            system_instruction=system_prompt,
-                            temperature=0.3,
-                        )
+            if fb is not None and not message.get("feedback_saved"):
+                user_prompt = st.session_state.messages[idx-1]["content"] if idx > 0 else ""
+                
+                if fb == 1:
+                    save_feedback(user_prompt, message["content"], 1, user_name)
+                    message["feedback_saved"] = True
+                    st.toast("ขอบคุณสำหรับ Feedback ครับ!")
+                elif fb == 0:
+                    with st.expander("⚠️ ช่วยบอกเหตุผลที่คำตอบนี้ยังไม่ถูกใจ เพื่อนำไปสอน AI ต่อครับ:"):
+                        reason_text = st.text_input("เช่น ราคาสินค้าเกินงบ, แนะนำสินค้าซ้ำ, มีสารที่แพ้", key=f"reason_input_{idx}")
+                        if st.button("ส่งข้อเสนอแนะ", key=f"btn_reason_{idx}"):
+                            save_feedback(user_prompt, message["content"], -1, user_name, reason_text)
+                            message["feedback_saved"] = True
+                            st.success("บันทึกข้อผิดพลาดเรียบร้อย ขอบคุณครับ!")
+                            st.rerun()
+
+# 5.2 กล่องรับข้อความใหม่
+if user_input := st.chat_input("พิมพ์ปรึกษาปัญหาผิว หรือถามเรื่องสกินแคร์ที่นี่..."):
+    # บันทึกพร้อมผูก device_id และ user_name
+    save_message(device_id, user_name, "user", user_input)
+    st.session_state.messages.append({"role": "user", "content": user_input})
+
+    with st.spinner("ผู้ช่วยกำลังคิดคำตอบ..."):
+        max_retries = 3
+        for attempt in range(max_retries):
+            try:
+                response = st.session_state.client.models.generate_content(
+                    model="gemini-3.5-flash-lite",
+                    contents=user_input,
+                    config=types.GenerateContentConfig(
+                        system_instruction=system_prompt,
+                        temperature=0.3,
                     )
-                    
-                    save_message("assistant", response.text)
-                    st.session_state.messages.append({"role": "assistant", "content": response.text})
-                    st.markdown(response.text)
-                    success = True
-                    break
-                    
-                except (ServerError, APIError) as e:
-                    if attempt < max_retries - 1:
-                        time.sleep(2)
-                    else:
-                        st.warning("Server มีปัญหาขณะนี้ โปรดลองใหม่อีกครั้ง")
-                except Exception as e:
-                    st.error(f"เกิดข้อผิดพลาด: {e}")
-                    break
+                )
+                
+                save_message(device_id, user_name, "assistant", response.text)
+                st.session_state.messages.append({"role": "assistant", "content": response.text})
+                break
+                
+            except (ServerError, APIError) as e:
+                if attempt < max_retries - 1:
+                    time.sleep(2)
+                else:
+                    st.error("Server มีปัญหาขณะนี้ โปรดลองใหม่อีกครั้ง")
+            except Exception as e:
+                st.error(f"เกิดข้อผิดพลาด: {e}")
+                break
+
+    st.rerun()
