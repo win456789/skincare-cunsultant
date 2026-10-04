@@ -46,18 +46,17 @@ def get_all_products_context(max_budget=0):
     response = supabase.table("products").select("*").execute()
     products = response.data or []
     
-    # 🟢 แปลงค่างบเป็น int อย่างปลอดภัย
+    # แปลงค่างบเป็น int ป้องกัน Error
     try:
         max_budget = int(max_budget) if max_budget else 0
     except (ValueError, TypeError):
         max_budget = 0
     
-    # 🟢 Hard Filtering + แปลงราคาสินค้าเป็น int ป้องกัน String Comparison
+    # Hard Filtering คัดกรองราคาสินค้า
     if max_budget > 0:
         filtered_products = []
         for p in products:
             try:
-                # แปลงราคาใน DB เป็นตัวเลข (เผื่อใน DB เก็บเป็น string หรือ float)
                 price = int(float(p.get("price", 0)))
                 if price <= max_budget:
                     filtered_products.append(p)
