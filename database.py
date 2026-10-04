@@ -122,18 +122,6 @@ if __name__ == "__main__":
     )
 
     add_new_product(
-        "MizuMi Water Serum Sunscreen SPF50+",
-        "MizuMi",
-        "Sunscreen",
-        "ทุกสภาพผิว, ผิวแพ้ง่าย, ผิวแห้ง, เหมาะสำหรับใช้ชีวิตประจำวัน, ไม่กันน้ำ, ไม่แดดจัด",
-        "Physical Sunscreen Filter",
-        890.00,
-        "บางเบา ซึมไว ไม่มีสารกันแดดแบบเคมี น้ำมัน น้ำหอม แอลกอฮอล์ พาราเบน และสีสังเคราะห์ ไม่ทำให้อุดตันผิว ลดการเกิดสิว",
-        "https://s2.konvy.com/static/team/2026/0220/17715725746988.jpg",
-        "https://s.shopee.co.th/905gTNZWWF"
-    )
-
-    add_new_product(
         "Hada Labo Hydrating Lotion",
         "Hada Labo",
         "Toner",
