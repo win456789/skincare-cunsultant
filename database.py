@@ -197,7 +197,7 @@ if __name__ == "__main__":
         "The ORDINARY Glycolic Acid 7%",
         "THE ORDINARY",
         "Toner",
-        "ไม่เหมาะผิวเบาะบาง,ผลัดเซลล์ผิว",
+        "ไม่เหมาะผิวเบาะบาง,ผลัดเซลล์ผิว,ผิวแก่",
         "Glycolic Acid 7%",
         600.00,
         "ช่วยปรับสภาพผิวให้เรียบเนียนขึ้นอย่างชัดเจน ช่วยให้สีผิวแลดูสม่ำเสมอยิ่งขึ้น ผิวแลดูกระจ่างใสขึ้นเมื่อใช้เป็นประจำ นอกจากนี้ยังช่วยลดเลือนเส้นริ้วเล็ก ๆ และร่องลึก โทนเนอร์สูตรน้ำนี้ี่เหมาะสำหรับใช้เป็นประจำทุกวัน",
@@ -420,5 +420,113 @@ if __name__ == "__main__":
         "https://www.central.co.th/_next/image?url=https%3A%2F%2Fassets.central.co.th%2Ffile-assets%2FCDSPIM%2Fweb%2FImage%2FCDS1927%2FANESSA-ANPERFECTUVMILDMILK60ML-CDS19271460-1.webp&w=256&q=75",
         "https://s.shopee.co.th/3qNaOYCuan"
     )
-
-    print("✨ บันทึกสินค้าลง Supabase สำเร็จทั้งหมด 27 รายการเรียบร้อย!")
+    add_new_product(
+        "L'Oréal Paris Glycolic Bright",
+        "L'Oréal",
+        "Serum",
+        "ผิวใส, ผิวหมองคล้ำ, จุดด่างดำ, รอยสิว, สีผิวไม่สม่ำเสมอ, ทุกสภาพผิว",
+        "Glycolic Acid,Melasyl™,Niacinamide",
+        799.00,
+        "ผลิตภัณฑ์บำรุงผิวหน้าที่ช่วยผลัดเซลล์ผิวอย่างอ่อนโยน และลดเลือนจุดด่างดำ เพื่อผิวโกลว์กระจ่างใส",
+        "https://www.konvy.com/static/team/2024/0826/17246501577149_600x600.jpg",
+        "https://s.shopee.co.th/80DB0niTAt"
+    )
+    add_new_product(
+        "COSRX The Alpha-Arbutin 2 Discoloration Care Serum",
+        "COSRX",
+        "Serum",
+        "ผิวใส, ผิวหมองคล้ำ, จุดด่างดำ, รอยสิว, สีผิวไม่สม่ำเสมอ, ทุกสภาพผิว, ผิวแพ้ง่าย",
+        "Alpha-Arbutin, Niacinamide, Tranexamic Acid, Glutathione, Ferulic Acid",
+        550.00,
+        "ช่วยลดเลือนรอยดำจากสิว จุดด่างดำ ฝ้า กระ และปรับสีผิวให้สม่ำเสมอ",
+        "https://down-th.img.susercontent.com/file/sg-11134207-825b1-mr5jlnl9337q08",
+        "https://s.shopee.co.th/1AtUIu8Ac"
+    )
+    add_new_product(
+        "Dr.PONG 15C ANTIOXIDANT VITAMIN C SHAKE SHAKE SERUM",
+        "Dr.PONG",
+        "Serum",
+        "ผิวใส, ผิวหมองคล้ำ, จุดด่างดำ, รอยสิว, สีผิวไม่สม่ำเสมอ, ทุกสภาพผิว, รูขุมขนกว้าง, ริ้วรอย",
+        "L-Ascorbic Acid 15%, Glutathione 2%, Gluconolactone (PHA) 1%, C-FreshLock Tech",
+        399.00,
+        "เป็นเซรั่มวิตามินซีสูตรผสมสดที่ช่วยลดเลือนรอยดำ กระชับรูขุมขน และเพิ่มความกระจ่างใส",
+        "https://medias.watsons.co.th/publishing/WTCTH-309495-front-zoom.jpg?version=1733868669",
+        "https://s.shopee.co.th/7Ae41cgwsM"
+    )
+    add_new_product(
+        "Olay Regenerist Super Collagen-Peptides Moisturiser",
+        "Olay",
+        "Moisturizer",
+        "ผิวแก่,ริ้วรอย, ทุกสภาพผิว, ผิวแพ้ง่าย, ผิวหย่อนคล้อยขาดความกระชับ",
+        "WATER, GLYCERIN, NIACINAMIDE, ISOHEXADECANE,PENTYLENE GLYCOL, DIMETHICONE, ISOPROPYL ISOSTEARATE, BUTYLENE GLYCOL, POLYACRYLAMIDE, MANNITOL, ACETYL TETRAPEPTIDE-11, PALMITOYL DIPEPTIDE-7, PALMITOYL PENTAPEPTIDE-4, ACETYL HEXAPEPTIDE-8, TRIPEPTIDE-3, PANTHENOL, TOCOPHERYL ACETATE, STEARYL ALCOHOL, C13-14 ISOPARAFFIN, CETYL ALCOHOL, 1,2-HEXANEDIOL, BEHENYL ALCOHOL, CAPRYLYL GLYCOL, PHENOXYETHANOL, DIMETHICONOL, LAURETH-7, PEG-100 STEARATE, DISODIUM EDTA, FRAGRANCE, CETEARYL ALCOHOL, CETEARYL GLUCOSIDE, PALMITIC ACID, STEARIC ACID, TITANIUM DIOXIDE",
+        699.00,
+        "เป็นครีมบำรุงผิวหน้าที่ช่วยเติมความชุ่มชื้นและลดเลือนริ้วรอยกระชับผิว",
+        "https://st.bigc-cs.com/cdn-cgi/image/format=webp,quality=90/public/media/catalog/product/51/49/4987176267351/4987176267351_2-20260721115800-.jpg",
+        "https://s.shopee.co.th/2VsETxyEo9"
+    )
+    add_new_product(
+        "CeraVe Resurfacing Retinol Serum",
+        "CeraVe",
+        "Serum",
+        "รอยดำรอยแดงจากสิว, ผิวไม่เรียบเนียน, ผิวใส, ริ้วรอย",
+        "Encapsulated Retinol 0.1%, Licorice Root Extract, 3 Essential Ceramides, Niacinamide",
+        755.00,
+        "เป็นเซรั่มบำรุงผิวหน้าสูตรอ่อนโยนที่พัฒนาโดยแพทย์ผิวหนัง ช่วยลดเลือนรอยดำรอยสิว กระชับรูขุมขน และปรับผิวให้เรียบเนียนใน 4 สัปดาห์",
+        "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTVVVpkxm2EjGHY3RqWfstMlI_86aDie61uF-uSO4gf6UE6i99wTKjJCmko&s=10",
+        "https://s.shopee.co.th/70Ke0x8Yns"
+    )
+    add_new_product(
+        "ANUA Heartleaf 77% Soothing Toner",
+        "Anua" ,
+        "Toner" ,
+        "ผิวบอบบาง, ผิวแพ้ง่าย, ผิวเป็นสิว, สิวอักเสบ, สิวผด, ระคายเคือง, รอยแดง, ทุกสภาพผิว" ,
+        "Heartleaf 77%, pH 5.5",
+        660.00,
+        "เป็นโทนเนอร์ยอดฮิตจากเกาหลีที่โดดเด่นเรื่องการปลอบประโลมผิว ลดอาการระคายเคือง และช่วยลดปัญหาสิวผดสิวอักเสบได้อย่างอ่อนโยน",
+        "https://s2.konvy.com/static/team/2022/0929/16644419475444.jpg",
+        "https://s.shopee.co.th/3qNcFV7CTh"
+    )
+    add_new_product(
+        "everyskin every barrier booster cleanser",
+        "everyskin",
+        "Cleanser",
+        "เหมาะทุกสภาพผิว, ผิวแห้งมาก, ผิวบอบบาง, ผิวแพ้ง่าย, ผิวเป็นสิวง่าย, ผิวอ่อนแอ, ผิวอักเสบ",
+        "Ceramides, Vitamin B5 (Panthenol) & Allantoin, Fermented Sweet Black Tea Extract, Centella Asiatica & Green Tea,Aloe Vera, Cucumber & Cactus Extract",
+        350.00,
+        "เป็นเจลล้างหน้าสูตรอ่อนโยน pH 5.5 จากแบรนด์ไทย EverySkinTH ที่ช่วยทำความสะอาดผิวพร้อมเสริมเกราะป้องกันผิว (Skin Barrier) ให้แข็งแรง",
+        "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcT_M3vfJgNM4T8Q4w7Zs1pEZrW6MdObFDwcDrLsTlr9PxQmz72WcTRVy7bz&s=10",
+        "https://s.shopee.co.th/8Kq1cCMOXS"
+    )
+    add_new_product(
+        "La Roche-Posay Effaclar Micro-Peeling Purifying Gel",
+        "La Roche-Posay",
+        "Cleanser",
+        "ผิวเป็นสิว, สิวอุดตัน, สิวอักเสบ, ผิวมันมาก, ไม่เหมาะคนผิวแพ้ง่าย, ไม่เหมาะคนผิวแห้ง",
+        "2% Salicylic Acid & LHA, Zinc, Glycerin & Thermal Spring Water",
+        299.00,
+        "เป็นเจลทำความสะอาดผิวหน้าและผิวกายสูตรหลอดสีเขียว ออกแบบมาสำหรับผิวมันและมีแนวโน้มเป็นสิวง่ายหรือเป็นสิวซ้ำซาก",
+        "https://thmappbkk.blob.core.windows.net/boots/2026/4/7/03e57ef1-175c-404b-8ceb-e186020bf470_large.png",
+        "https://s.shopee.co.th/1qcXsn7cs5"
+    )
+    add_new_product(
+        "Nivea skin glow bubble wash foam",
+        "Nivea",
+        "Cleanser",
+        "ผิวผสม, ผิวมัน, หน้าหมองคล้ำ, รอยดำ",
+        "Aqua, Myristic Acid, Propylene Glycol, Palmitic Acid, Stearic Acid, Potassium Hydroxide, Glycerin, Lauric Acid, PEG-150, PEG-8, Glyceryl Stearate, 4-Butylresorcinol, Hydrolyzed Pearl, Glycyrrhiza Glabra Root Extract, Sodium Ascorbyl Phosphate, Fucus Vesiculosus Extract, Nelumbo Nucifera Flower Extract, Panax Ginseng Root Extract, Aluminum Chlorohydrate, Carnitine, Glyceryl Glucoside, Malpighia Glabra Fruit Juice, Beeswax, Sodium Methyl Cocoyl Taurate, Lactic Acid, Arachidic Acid, Oleic Acid, Caprylic/Capric Triglyceride, Trideceth-9, Citric Acid, Glucose, PEG-40 Hydrogenated Castor Oil, Bisabolol, Caramel, Linalool, Alpha-Isomethyl Ionone, Geraniol, Trisodium EDTA, Parfum, Sodium Benzoate, Potassium Sorbate, CI 77891",
+        139.00,
+        "เป็นโฟมล้างหน้าเนื้อฟองนุ่มละเอียดสูตรทำความสะอาดล้ำลึก",
+        "https://s2.konvy.com/static/team/2025/0318/17422725656888.jpg",
+        "https://s.shopee.co.th/4qG9SRRYKB"
+    )
+    add_new_product(
+        "INGU Hydrating Gentle Cleanser + Biome Balance",
+        "INGU" ,
+        "Cleanser", 
+        "เหมาะกับทุกสภาพผิว, ผิวแห้ง, ผิวบอบบาง, ผิวแพ้ง่าย, ผิวเป็นสิวง่าย",
+        "Jasmine Rice Extract 4,000 ppm, PENTAVITIN® 0.5%, Prebiotic Complex 0.5%, Marine Hyaluronic Acid 0.5%, Mild Surfactant Blend 42.0%",
+        390.00,
+        "คลีนเซอร์ล้างหน้าสูตร Biome Balance ที่พัฒนาขึ้นเพื่อดูแลผิวที่บอบบางโดยเฉพาะทำความสะอาดอย่างอ่อนโยน พร้อมช่วยให้ผิวรู้สึกชุ่มชื้น และไม่เสียสมดุลด้วยสารทำความสะอาดกลุ่ม Amino Acid ที่อ่อนโยนต่อผิวช่วยชำระสิ่งสกปรกและความมันตกค้าง โดยไม่รบกวนสมดุลผิวพร้อมสารสกัดจากข้าวหอมมะลิหมัก, PENTAVITIN® และ Prebiotic Complex เสริม Skin Barrier ช่วยมอบความรู้สึกชุ่มชื้นและดูแลเกราะป้องกันผิวอย่างอ่อนโยนค่า pH เหมาะกับผิวทุกประเภท มอบผิวสัมผัสนุ่ม และรู้สึกสบายผิวหลังล้างหน้า",
+        "https://down-th.img.susercontent.com/file/th-11134207-81ztf-msk0vsrwfk7e6f",
+        "https://s.shopee.co.th/4qG9SaAzck"
+    )
