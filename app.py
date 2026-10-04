@@ -283,36 +283,43 @@ for idx, message in enumerate(st.session_state.messages):
                             st.success("บันทึกข้อผิดพลาดเรียบร้อย ขอบคุณครับ!")
                             st.rerun()
 
-# 5.2 กล่องรับข้อความใหม่
+# 5.2 กล่องรับข้อความใหม่ และประมวลผล Gemini API
 if user_input := st.chat_input("พิมพ์ปรึกษาปัญหาผิว หรือถามเรื่องสกินแคร์ที่นี่..."):
-    # บันทึกพร้อมผูก device_id และ user_name
+    # 1. บันทึกข้อความผู้ใช้ลง SQLite และ session_state
     save_message(device_id, user_name, "user", user_input)
     st.session_state.messages.append({"role": "user", "content": user_input})
 
-    with st.spinner("ผู้ช่วยกำลังคิดคำตอบ..."):
-        max_retries = 3
-        for attempt in range(max_retries):
-            try:
-                response = st.session_state.client.models.generate_content(
-                    model="gemini-3.5-flash-lite",
-                    contents=user_input,
-                    config=types.GenerateContentConfig(
-                        system_instruction=system_prompt,
-                        temperature=0.3,
-                    )
-                )
-                
-                save_message(device_id, user_name, "assistant", response.text)
-                st.session_state.messages.append({"role": "assistant", "content": response.text})
-                break
-                
-            except (ServerError, APIError) as e:
-                if attempt < max_retries - 1:
-                    time.sleep(2)
-                else:
-                    st.error("Server มีปัญหาขณะนี้ โปรดลองใหม่อีกครั้ง")
-            except Exception as e:
-                st.error(f"เกิดข้อผิดพลาด: {e}")
-                break
+    # 🟢 2. วาดข้อความของผู้ใช้ค้างไว้บนหน้าจอทันที
+    with st.chat_message("user"):
+        st.markdown(user_input)
 
+    # 🟢 3. วาดช่องข้อความ AI พร้อมสถานะกำลังคิด
+    with st.chat_message("assistant"):
+        with st.spinner("ผู้ช่วยกำลังคิดคำตอบ..."):
+            max_retries = 3
+            for attempt in range(max_retries):
+                try:
+                    response = st.session_state.client.models.generate_content(
+                        model="gemini-3.5-flash-lite",
+                        contents=user_input,
+                        config=types.GenerateContentConfig(
+                            system_instruction=system_prompt,
+                            temperature=0.3,
+                        )
+                    )
+                    
+                    save_message(device_id, user_name, "assistant", response.text)
+                    st.session_state.messages.append({"role": "assistant", "content": response.text})
+                    break
+                    
+                except (ServerError, APIError) as e:
+                    if attempt < max_retries - 1:
+                        time.sleep(2)
+                    else:
+                        st.error("Server มีปัญหาขณะนี้ โปรดลองใหม่อีกครั้ง")
+                except Exception as e:
+                    st.error(f"เกิดข้อผิดพลาด: {e}")
+                    break
+
+    # 4. รีเฟรชหน้าเว็บ เพื่อให้ระบบโหลดประวัติและแสดงปุ่ม Feedback ครบถ้วน
     st.rerun()
