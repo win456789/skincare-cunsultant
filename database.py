@@ -1,6 +1,6 @@
+import random
 import streamlit as st
 from supabase import create_client, Client
-import random 
 
 # ดึงค่า URL และ Key จาก Secrets ของ Streamlit
 try:
@@ -15,21 +15,6 @@ supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
 # ==========================================
 # 1. ฟังก์ชันจัดการ User Profile (Supabase)
 # ==========================================
-
-def get_all_products_context(max_budget=0):
-    response = supabase.table("products").select("*").execute()
-    products = response.data or []
-    
-    # 🟢 สุ่มสลับลำดับสินค้า ป้องกัน AI เลือกเฉพาะสินค้าตัวแรกๆ ซ้ำเดิม
-    random.shuffle(products)
-    
-    try:
-        max_budget = int(max_budget) if max_budget else 0
-    except (ValueError, TypeError):
-        max_budget = 0
-    
-    # ... (ส่วนโค้ดกรองสินค้าตามเดิม)
-
 def get_all_usernames(device_id="default_device"):
     res = supabase.table("users").select("name").eq("device_id", device_id).execute()
     return [row["name"] for row in res.data]
@@ -42,14 +27,19 @@ def save_or_update_user(device_id, name, skin_type, skin_concerns, allergies, ma
         "skin_concerns": skin_concerns,
         "allergies": allergies,
         "max_budget": max_budget
-        }
+    }
     supabase.table("users").upsert(data, on_conflict="device_id, name").execute()
 
 def get_user_profile(device_id, name):
-    res = supabase.table("users").select("skin_type, skin_concerns, allergies").eq("device_id", device_id).eq("name", name).execute()
+    res = supabase.table("users").select("skin_type, skin_concerns, allergies, max_budget").eq("device_id", device_id).eq("name", name).execute()
     if res.data:
         row = res.data[0]
-        return {"skin_type": row["skin_type"], "skin_concerns": row["skin_concerns"], "allergies": row["allergies"]}
+        return {
+            "skin_type": row.get("skin_type"),
+            "skin_concerns": row.get("skin_concerns"),
+            "allergies": row.get("allergies"),
+            "max_budget": row.get("max_budget", 0)
+        }
     return None
 
 def delete_user_profile(device_id, name):
@@ -61,6 +51,9 @@ def delete_user_profile(device_id, name):
 def get_all_products_context(max_budget=0):
     response = supabase.table("products").select("*").execute()
     products = response.data or []
+    
+    # 🟢 สุ่มสลับลำดับสินค้าทุกครั้ง ป้องกัน AI เลือกเฉพาะสินค้าตัวแรกๆ ซ้ำเดิม
+    random.shuffle(products)
     
     try:
         max_budget = int(max_budget) if max_budget else 0
@@ -80,7 +73,6 @@ def get_all_products_context(max_budget=0):
     
     context_text = f"\n[รายการสินค้าสกินแคร์ในคลังของเราที่ราคาไม่เกิน {max_budget} บาท]:\n" if max_budget > 0 else "\n[รายการสินค้าสกินแคร์ในคลังของเราทั้งหมด]:\n"
     for p in products:
-        # 🟢 ดึงลิงก์โดยรองรับทั้ง shopee_url และ purchase_channel
         link = p.get('shopee_url') or p.get('purchase_channel') or '#'
         context_text += f"- ชื่อ: {p.get('name')}, แบรนด์: {p.get('brand')}, หมวดหมู่: {p.get('category')}, ราคา: {p.get('price')} บาท, ลิงก์: {link}, รูปภาพ: {p.get('image_url')}\n"
         
@@ -107,10 +99,73 @@ def add_new_product(name, brand, category, suitable_skin, active_ingredients, pr
     print(f"✅ บันทึกสินค้า '{name}' ลง Supabase เรียบร้อยแล้ว")
 
 # ==========================================
-# 3. ส่วนรันเพิ่มข้อมูลสินค้าลง Supabase
+# 3. ฟังก์ชันจัดการ Feedback & Dynamic Few-Shot
+# ==========================================
+def save_feedback(user_input, ai_response, rating, user_name="anonymous", reason=""):
+    """บันทึกประเมินคำตอบ AI พร้อมเหตุผลลง Supabase"""
+    try:
+        data = {
+            "user_input": user_input,
+            "ai_response": ai_response,
+            "rating": rating,
+            "user_name": user_name,
+            "reason": reason
+        }
+        supabase.table("feedback_logs").insert(data).execute()
+        print(f"✅ บันทึก Feedback ({rating}) เรียบร้อยแล้ว")
+    except Exception as e:
+        print(f"❌ บันทึก Feedback ล้มเหลว: {e}")
+
+def get_few_shot_examples(limit=2):
+    """ดึงทั้งเคส 👎 (คำเตือนห้ามทำผิดซ้ำ) และเคส 👍 (สไตล์การตอบ) มาทำ Dynamic Few-Shot"""
+    context = ""
+
+    # 1. ดึงเคส 👎 ที่มีเหตุผล มาสร้างเป็น Guardrail
+    try:
+        bad_res = (
+            supabase.table("feedback_logs")
+            .select("user_input, reason")
+            .eq("rating", -1)
+            .neq("reason", "")
+            .order("id", desc=True)
+            .limit(limit)
+            .execute()
+        )
+        bad_data = bad_res.data or []
+        if bad_data:
+            context += "\n\n🚨 **ข้อผิดพลาดในอดีตที่ผู้ใช้เคยติไว้ (ห้ามทำผิดซ้ำเด็ดขาด)**:\n"
+            for item in bad_data:
+                context += f"- บริบทคำถาม: \"{item['user_input']}\" -> เหตุผลที่โดนตำหนิ: \"{item['reason']}\" (ระวังอย่าให้เกิดปัญหานี้อีก)\n"
+    except Exception as e:
+        print(f"⚠️ เกิดข้อผิดพลาดในการดึง Negative Feedback: {e}")
+
+    # 2. ดึงเคส 👍 มาเป็นตัวอย่างสไตล์
+    try:
+        good_res = (
+            supabase.table("feedback_logs")
+            .select("user_input, ai_response")
+            .eq("rating", 1)
+            .order("id", desc=True)
+            .limit(1)  # 🟢 จำกัด 1 เคสพอ เพื่อป้องกัน AI ลอกชื่อสินค้าเดิม
+            .execute()
+        )
+        good_data = good_res.data or []
+        if good_data:
+            context += "\n✨ **ตัวอย่างสไตล์และโครงสร้างการตอบที่ดี (ให้เรียนรู้เฉพาะรูปแบบภาษา ห้ามก็อปปี้รายการสินค้าเดิม)**:\n"
+            for idx, item in enumerate(good_data, 1):
+                context += f"ตัวอย่างที่ {idx}:\n"
+                context += f"- แนวคำถาม: {item['user_input']}\n"
+                context += f"- โครงสร้างการตอบที่ดี: {item['ai_response']}\n"
+                context += f"- คำแนะนำ: ให้ใช้สไตล์การอธิบายแบบตัวอย่างนี้ แต่ต้องวิเคราะห์เลือกสินค้าใหม่ที่เข้ากับบริบทของผู้ใช้ปัจจุบันเสมอ\n\n"
+    except Exception as e:
+        print(f"⚠️ เกิดข้อผิดพลาดในการดึง Positive Feedback: {e}")
+
+    return context
+
+# ==========================================
+# 4. ส่วนรันเพิ่มข้อมูลสินค้าลง Supabase (Seeding)
 # ==========================================
 if __name__ == "__main__":
-    # ล้างข้อมูลเดิมใน Supabase ก่อนเริ่มเพิ่มสินค้า
     clear_products_table()
 
     add_new_product(
@@ -168,7 +223,7 @@ if __name__ == "__main__":
         "ทุกสภาพผิว, ผิวแพ้ง่าย, ผิวแห้ง, เหมาะสำหรับใช้ชีวิตประจำวัน, ไม่กันน้ำ, ไม่แดดจัด",
         "Physical Sunscreen Filter",
         890.00,
-        "บางเบา ซึมไว ไม่มีสารกันแดดแบบเคมี น้ำมัน น้ำหอม แอลกอฮอล์ พาราเบน และสีสังเคราะห์ ไม่ทำให้อุดตันผิว ลดการเกิดสิว",
+        "บางเบา ซึมไว ไม่มีสารกันแดดแบบเคมี น้ำมัน น้ำหอม แอลกอฮอล์ พาราเบน และสีสังเคราะห์ ไม่ทำใหุดตันผิว ลดการเกิดสิว",
         "https://s2.konvy.com/static/team/2026/0220/17715725746988.jpg",
         "https://s.shopee.co.th/905gTNZWWF"
     )
@@ -436,6 +491,7 @@ if __name__ == "__main__":
         "https://www.central.co.th/_next/image?url=https%3A%2F%2Fassets.central.co.th%2Ffile-assets%2FCDSPIM%2Fweb%2FImage%2FCDS1927%2FANESSA-ANPERFECTUVMILDMILK60ML-CDS19271460-1.webp&w=256&q=75",
         "https://s.shopee.co.th/3qNaOYCuan"
     )
+
     add_new_product(
         "L'Oréal Paris Glycolic Bright",
         "L'Oréal",
@@ -447,6 +503,7 @@ if __name__ == "__main__":
         "https://www.konvy.com/static/team/2024/0826/17246501577149_600x600.jpg",
         "https://s.shopee.co.th/80DB0niTAt"
     )
+
     add_new_product(
         "COSRX The Alpha-Arbutin 2 Discoloration Care Serum",
         "COSRX",
@@ -458,6 +515,7 @@ if __name__ == "__main__":
         "https://down-th.img.susercontent.com/file/sg-11134207-825b1-mr5jlnl9337q08",
         "https://s.shopee.co.th/1AtUIu8Ac"
     )
+
     add_new_product(
         "Dr.PONG 15C ANTIOXIDANT VITAMIN C SHAKE SHAKE SERUM",
         "Dr.PONG",
@@ -469,6 +527,7 @@ if __name__ == "__main__":
         "https://medias.watsons.co.th/publishing/WTCTH-309495-front-zoom.jpg?version=1733868669",
         "https://s.shopee.co.th/7Ae41cgwsM"
     )
+
     add_new_product(
         "Olay Regenerist Super Collagen-Peptides Moisturiser",
         "Olay",
@@ -480,6 +539,7 @@ if __name__ == "__main__":
         "https://st.bigc-cs.com/cdn-cgi/image/format=webp,quality=90/public/media/catalog/product/51/49/4987176267351/4987176267351_2-20260721115800-.jpg",
         "https://s.shopee.co.th/2VsETxyEo9"
     )
+
     add_new_product(
         "CeraVe Resurfacing Retinol Serum",
         "CeraVe",
@@ -491,6 +551,7 @@ if __name__ == "__main__":
         "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTVVVpkxm2EjGHY3RqWfstMlI_86aDie61uF-uSO4gf6UE6i99wTKjJCmko&s=10",
         "https://s.shopee.co.th/70Ke0x8Yns"
     )
+
     add_new_product(
         "ANUA Heartleaf 77% Soothing Toner",
         "Anua" ,
@@ -502,6 +563,7 @@ if __name__ == "__main__":
         "https://s2.konvy.com/static/team/2022/0929/16644419475444.jpg",
         "https://s.shopee.co.th/3qNcFV7CTh"
     )
+
     add_new_product(
         "everyskin every barrier booster cleanser",
         "everyskin",
@@ -509,10 +571,11 @@ if __name__ == "__main__":
         "เหมาะทุกสภาพผิว, ผิวแห้งมาก, ผิวบอบบาง, ผิวแพ้ง่าย, ผิวเป็นสิวง่าย, ผิวอ่อนแอ, ผิวอักเสบ",
         "Ceramides, Vitamin B5 (Panthenol) & Allantoin, Fermented Sweet Black Tea Extract, Centella Asiatica & Green Tea,Aloe Vera, Cucumber & Cactus Extract",
         350.00,
-        "เป็นเจลล้างหน้าสูตรอ่อนโยน pH 5.5 จากแบรนด์ไทย EverySkinTH ที่ช่วยทำความสะอาดผิวพร้อมเสริมเกราะป้องกันผิว (Skin Barrier) ให้แข็งแรง",
+        "เป็นเจลทำความสะอาดผิวหน้าสูตรอ่อนโยน pH 5.5 จากแบรนด์ไทย EverySkinTH ที่ช่วยทำความสะอาดผิวพร้อมเสริมเกราะป้องกันผิว (Skin Barrier) ให้แข็งแรง",
         "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcT_M3vfJgNM4T8Q4w7Zs1pEZrW6MdObFDwcDrLsTlr9PxQmz72WcTRVy7bz&s=10",
         "https://s.shopee.co.th/8Kq1cCMOXS"
     )
+
     add_new_product(
         "La Roche-Posay Effaclar Micro-Peeling Purifying Gel",
         "La Roche-Posay",
@@ -524,6 +587,7 @@ if __name__ == "__main__":
         "https://thmappbkk.blob.core.windows.net/boots/2026/4/7/03e57ef1-175c-404b-8ceb-e186020bf470_large.png",
         "https://s.shopee.co.th/1qcXsn7cs5"
     )
+
     add_new_product(
         "Nivea skin glow bubble wash foam",
         "Nivea",
@@ -535,6 +599,7 @@ if __name__ == "__main__":
         "https://s2.konvy.com/static/team/2025/0318/17422725656888.jpg",
         "https://s.shopee.co.th/4qG9SRRYKB"
     )
+
     add_new_product(
         "INGU Hydrating Gentle Cleanser + Biome Balance",
         "INGU" ,
@@ -546,6 +611,7 @@ if __name__ == "__main__":
         "https://down-th.img.susercontent.com/file/th-11134207-81ztf-msk0vsrwfk7e6f",
         "https://s.shopee.co.th/4qG9SaAzck"
     )
+
     add_new_product(
         "Bioderma sebium serum",
         "Bioderma", 
@@ -557,6 +623,7 @@ if __name__ == "__main__":
         "https://medias.watsons.co.th/publishing/WTCTH-309664-front-zoom.jpg?version=1781723891",
         "https://s.shopee.co.th/5LCQ4dBxHO"
     )
+
     add_new_product(
         "Sei skin save soothing serum",
         "Sei skin", 
@@ -564,21 +631,23 @@ if __name__ == "__main__":
         "ผิวแพ้ง่าย, ผิวอ่อนออน, ผิวเป็นสิว, ผิวแห้ง, เหมาะกับทุกผิว, ผิวเสียสมดุล, ผิวระคายเคืองง่าย", 
         "Aqua, Niacinamide, Propanediol, Ethoxydiglycol, Butylene Glycol, Glycerin, Ammonium Acryloyldimethyltaurate/VP Copolymer,Arisaema Amurense Extract, Ethyhexylglycerin, Capparis Spinosa Fruit Extract, Citrus Aurantium Tachibana Peel Extract, Artemisia Capillaris Extract, Pueraria Lobata Root Extract, Citrus (Tangerine) Peel Extract, Glycine Soja(soybean)Seed Extract, Sophora Flavescens Root Extract, Glycyrrhiza Inflata Root Extract, Humulus Lupulus Extract, Maclura Cochinchinensis Leaf Extract, Salix Alba (willow) Bark Extract, Opuntia Ficus-indica Stem Extract, 1,2-Hexanediol, Solanum Lycopersicum (Tomata)Stem Fruit Extract, Cystoseira Tamariscifolia Extract, Scutellaria Baicalensis Root Extract, Phenoxyethanol, Maltodextrin, Olea (Olive) Leaf Extract, Disodium EDTA, Citric Acid, Ceramide NP, Hydrogenated Lecithin, Glyceryl Stearate, Dipropylene Glycol, Silica.",
         690.00,
-        "มอยซ์เจอไรเซอร์เนื้อเซรั่มบางเบาไม่เหนอะหนะ ช่วยลดสาเหตุหลักๆในการเกิดสิว และป้องกันการเกิดสิวใหม่ด้วยการปรับสมดุลย์ไมโครไบโอมหรือแบคทีเรียบนผิวให้เป็นปกติมากยิ่งขึ้นด้วย Seboclear-mp ที่มีสาร bioflavonoids ช่วยลดการอักเสบ ต่อต้านอนุมูลอิสระ ลดการทำงานของต่อมไขมัน พร้อมส่วนผสมที่สำคัญอย่าง Niacinamide Ceramide Calisensix และ Senseryn ที่ช่วยการฟื้นฟูเกราะป้องกันผิว ลดการระคายเคือง แสบแดง หรืออาการแพ้ต่างๆ",
+        "มอยส์เจอไรเซอร์เนื้อเซรั่มบางเบาไม่เหนอะหนะ ช่วยลดสาเหตุหลักๆในการเกิดสิว และป้องกันการเกิดสิวใหม่ด้วยการปรับสมดุลย์ไมโครไบโอมหรือแบคทีเรียบนผิวให้เป็นปกติมากยิ่งขึ้นด้วย Seboclear-mp ที่มีสาร bioflavonoids ช่วยลดการอักเสบ ต่อต้านอนุมูลอิสระ ลดการทำงานของต่อมไขมัน พร้อมส่วนผสมที่สำคัญอย่าง Niacinamide Ceramide Calisensix และ Senseryn ที่ช่วยการฟื้นฟูเกราะป้องกันผิว ลดการระคายเคือง แสบแดง หรืออาการแพ้ต่างๆ",
         "https://down-th.img.susercontent.com/file/th-11134207-81zto-mmq3c7a1zwg153",
         "https://s.shopee.co.th/4qG9UDiqsi"
     )
+
     add_new_product(
         "Atopalm soothing gel lotion",
         "Atopalm",
         "Moisturizer",
-        "ิผิวมัน ผิวผสม ผิวแพ้ง่าย ผิวบอบบาง ผิวเป็นสิว",
-        "Water, Butylene Glycol, Glycerin, Pentaerythrityl Stearate ​Caprate ​Caprylate ​Adipate, 1,2-Hexanediol, Cetearyl Alcohol, Ammonium Acryloyldimethyltaurate​ Copolymer, Caprylic ​Capric Glycerides, Glyceryl Stearate Citrate, Sorbitan Stearate, Stearic Acid, Carbomer, Myristoyl/​Palmitoyl Oxostearamide/​Arachamide MEA, Sea Water, Phytosterols, Helianthus Annuus (Sunflower) Seed Oil, Palmitoyl Palmitamide Mea, Bis-Capryloyloxypalmitamido Isopropanol, N-Decanoyl Serinol, Sodium Hyaluronate, Tanacetum Annuum Flower Oil, Anthemis Nobilis Flower Extract, Salvia Officinalis (Sage) Oil, Pogostemon Cablin Oil, Elettaria Cardamomum Seed Oil, Mentha Arvensis Leaf Oil, Anthemis Nobilis Flower Oil, Juniperus Mexicana Oil, Leucine, Azulene, Lysine, Phenylalanine, Threonine, Valine",
+        "ผิวมัน, ผิวผสม, ผิวแพ้ง่าย, ผิวบอบบาง, ผิวเป็นสิว",
+        "Water, Butylene Glycol, Glycerin, Pentaerythrityl Stearate Caprate Caprylate Adipate, 1,2-Hexanediol, Cetearyl Alcohol, Ammonium Acryloyldimethyltaurate Copolymer, Caprylic Capric Glycerides, Glyceryl Stearate Citrate, Sorbitan Stearate, Stearic Acid, Carbomer, Myristoyl/Palmitoyl Oxostearamide/Arachamide MEA, Sea Water, Phytosterols, Helianthus Annuus (Sunflower) Seed Oil, Palmitoyl Palmitamide Mea, Bis-Capryloyloxypalmitamido Isopropanol, N-Decanoyl Serinol, Sodium Hyaluronate, Tanacetum Annuum Flower Oil, Anthemis Nobilis Flower Extract, Salvia Officinalis (Sage) Oil, Pogostemon Cablin Oil, Elettaria Cardamomum Seed Oil, Mentha Arvensis Leaf Oil, Anthemis Nobilis Flower Oil, Juniperus Mexicana Oil, Leucine, Azulene, Lysine, Phenylalanine, Threonine, Valine",
         390.00,
         "โลชั่นเนื้อเจลบางเบา ให้ความชุ่มชื้น ปลอบประโลมผิวแพ้ง่าย",
         "https://incidecoder-content.storage.googleapis.com/1a39793f-25e6-497f-947b-6233d25290ef/products/atopalm-soothing-gel-lotion-5/atopalm-soothing-gel-lotion-5_front_photo_300x300@2x.webp",
         "https://s.shopee.co.th/1qcXv86SMF"
     )
+
     add_new_product(
         "Atopalm MLE",
         "Atopalm",
@@ -590,80 +659,3 @@ if __name__ == "__main__":
         "https://medias.watsons.co.th/publishing/WTCTH-321053-swatch-zoom.jpg?version=1758137429",
         "https://s.shopee.co.th/1BMr83rY7D"
     )
-
-# ==========================================
-# 4. ฟังก์ชันจัดการ Feedback (👍 / 👎)
-# ==========================================
-# ==========================================
-# ฟังก์ชันจัดการ Feedback (👍 / 👎)
-# ==========================================
-def save_feedback(user_input, ai_response, rating, user_name="anonymous", reason=""):
-    """บันทึกประเมินคำตอบ AI พร้อมเหตุผลลง Supabase"""
-    try:
-        data = {
-            "user_input": user_input,
-            "ai_response": ai_response,
-            "rating": rating,
-            "user_name": user_name,
-            "reason": reason
-        }
-        supabase.table("feedback_logs").insert(data).execute()
-        print(f"✅ บันทึก Feedback ({rating}) เรียบร้อยแล้ว")
-    except Exception as e:
-        print(f"❌ บันทึก Feedback ล้มเหลว: {e}")
-
-def get_corrected_examples(limit=3):
-    """ดึงเคสที่เคยแก้คำตอบแล้วมาเป็นตัวอย่าง Few-Shot"""
-    res = supabase.table("feedback_logs").select("user_input, ai_response").eq("rating", -1).limit(limit).execute()
-    examples = ""
-    for row in (res.data or []):
-        examples += f"\n- คำถาม: {row['user_input']}\n  คำตอบที่ถูกต้อง: {row['ai_response']}\n"
-    return examples
-# ==========================================
-# ฟังก์ชันดึงตัวอย่าง Few-Shot จาก feedback_logs
-# ==========================================
-def get_few_shot_examples(limit=3):
-    """ดึงทั้งเคส 👍 และเคส 👎 พร้อมเหตุผล มาประกอบเป็น Dynamic Few-Shot"""
-    context = ""
-
-    # 🟢 1. ดึงเคส 👎 ที่มีเหตุผล มาสร้างเป็น "กฎข้อควรระวังจากผู้ใช้"
-    try:
-        bad_res = (
-            supabase.table("feedback_logs")
-            .select("user_input, reason")
-            .eq("rating", -1)
-            .neq("reason", "")
-            .order("id", desc=True)
-            .limit(limit)
-            .execute()
-        )
-        bad_data = bad_res.data or []
-        if bad_data:
-            context += "\n\n🚨 **ข้อผิดพลาดในอดีตที่ผู้ใช้เคยติไว้ (ห้ามทำผิดซ้ำเด็ดขาด)**:\n"
-            for item in bad_data:
-                context += f"- เมื่อผู้ใช้ถาม: \"{item['user_input']}\" -> ผู้ใช้เคยระบุข้อผิดพลาดว่า: \"{item['reason']}\" (ระวังอย่าให้เกิดปัญหานี้อีก)\n"
-    except Exception as e:
-        print(f"⚠️ เกิดข้อผิดพลาดในการดึง Negative Feedback: {e}")
-
-    # 🟢 2. ดึงเคส 👍 มาเป็นตัวอย่างรูปแบบคำตอบที่ดี
-    try:
-        good_res = (
-            supabase.table("feedback_logs")
-            .select("user_input, ai_response")
-            .eq("rating", 1)
-            .order("id", desc=True)
-            .limit(limit)
-            .execute()
-        )
-        good_data = good_res.data or []
-        if good_data:
-            context += "\n✨ **ตัวอย่างสไตล์และโครงสร้างการตอบที่ดี (ให้เรียนรู้เฉพาะรูปแบบภาษา ห้ามก็อปปี้รายการสินค้าเดิม)**:\n"
-            for idx, item in enumerate(good_data, 1):
-                context += f"ตัวอย่างที่ {idx}:\n"
-                context += f"- แนวคำถาม: {item['user_input']}\n"
-                context += f"- โครงสร้างการตอบที่ดี: {item['ai_response']}\n"
-                context += f"- คำแนะนำ: ให้ใช้สไตล์การอธิบายและรูปแบบ Markdown แบบตัวอย่างนี้ แต่ต้องวิเคราะห์เลือกสินค้าใหม่ที่เข้ากับบริบทของผู้ใช้ปัจจุบันเสมอ\n\n"
-    except Exception as e:
-        print(f"⚠️ เกิดข้อผิดพลาดในการดึง Positive Feedback: {e}")
-
-    return context
