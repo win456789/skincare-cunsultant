@@ -1,5 +1,6 @@
 import streamlit as st
 from supabase import create_client, Client
+import random 
 
 # ดึงค่า URL และ Key จาก Secrets ของ Streamlit
 try:
@@ -14,6 +15,21 @@ supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
 # ==========================================
 # 1. ฟังก์ชันจัดการ User Profile (Supabase)
 # ==========================================
+
+def get_all_products_context(max_budget=0):
+    response = supabase.table("products").select("*").execute()
+    products = response.data or []
+    
+    # 🟢 สุ่มสลับลำดับสินค้า ป้องกัน AI เลือกเฉพาะสินค้าตัวแรกๆ ซ้ำเดิม
+    random.shuffle(products)
+    
+    try:
+        max_budget = int(max_budget) if max_budget else 0
+    except (ValueError, TypeError):
+        max_budget = 0
+    
+    # ... (ส่วนโค้ดกรองสินค้าตามเดิม)
+
 def get_all_usernames(device_id="default_device"):
     res = supabase.table("users").select("name").eq("device_id", device_id).execute()
     return [row["name"] for row in res.data]
