@@ -280,6 +280,7 @@ for idx, message in enumerate(st.session_state.messages):
                             st.rerun()
 
 # 5.2 กล่องรับข้อความใหม่ และประมวลผล Gemini API
+few_shot_context = get_few_shot_examples(limit=1)
 if user_input := st.chat_input("พิมพ์ปรึกษาปัญหาผิว หรือถามเรื่องสกินแคร์ที่นี่..."):
     # 1. บันทึกข้อความผู้ใช้ลง SQLite และ session_state
     save_message(device_id, user_name, "user", user_input)

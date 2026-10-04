@@ -657,9 +657,12 @@ def get_few_shot_examples(limit=3):
         )
         good_data = good_res.data or []
         if good_data:
-            context += "\n✨ **ตัวอย่างแนวทางการตอบที่ดี (Positive Examples)**:\n"
+            context += "\n✨ **ตัวอย่างสไตล์และโครงสร้างการตอบที่ดี (ให้เรียนรู้เฉพาะรูปแบบภาษา ห้ามก็อปปี้รายการสินค้าเดิม)**:\n"
             for idx, item in enumerate(good_data, 1):
-                context += f"ตัวอย่างที่ {idx}:\n- คำถาม: {item['user_input']}\n- คำตอบที่ถูกต้อง: {item['ai_response']}\n\n"
+                context += f"ตัวอย่างที่ {idx}:\n"
+                context += f"- แนวคำถาม: {item['user_input']}\n"
+                context += f"- โครงสร้างการตอบที่ดี: {item['ai_response']}\n"
+                context += f"- คำแนะนำ: ให้ใช้สไตล์การอธิบายและรูปแบบ Markdown แบบตัวอย่างนี้ แต่ต้องวิเคราะห์เลือกสินค้าใหม่ที่เข้ากับบริบทของผู้ใช้ปัจจุบันเสมอ\n\n"
     except Exception as e:
         print(f"⚠️ เกิดข้อผิดพลาดในการดึง Positive Feedback: {e}")
 
