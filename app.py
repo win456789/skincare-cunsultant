@@ -317,7 +317,7 @@ if user_input := st.chat_input("พิมพ์ปรึกษาปัญหา
                         contents=user_input,
                         config=types.GenerateContentConfig(
                             system_instruction=dynamic_system_prompt, # 🟢 ใช้ Prompt ที่รวม Few-Shot เรียบร้อยแล้ว
-                            temperature=0.5,
+                            temperature=0.7,
                         )
                     )
                     
