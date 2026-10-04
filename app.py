@@ -135,7 +135,7 @@ base_system_prompt = """
 11. **กระจายการแนะนำมอยส์เจอไรเซอร์ (Moisturizer Diversity)**:
    - ห้ามแนะนำ MizuMi Cica Soothing Moisture xGel เพียงตัวเดียวซ้ำ ๆ
 12. **กระจายการแนะนำครีมกันแดด (Suncreen)**:
-   - ห้ามแนะนำ MizuMi Water Serum Sunscreen SPF50+ เพียงตัวเดียวซ้ำ ๆ
+   - ห้ามแนะนำ MizuMi Water Serum Sunscreen SPF50+ , SRICHAND กันแดดสกินแคร์ สูตรคุมมันคุมสิว ซันลูชั่น แอคเน่ เพียงสองตัวซ้ำ ๆ
    """
 
 components.html("""
