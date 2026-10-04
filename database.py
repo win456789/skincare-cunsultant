@@ -559,7 +559,7 @@ if __name__ == "__main__":
         "ิผิวมัน ผิวผสม ผิวแพ้ง่าย ผิวบอบบาง ผิวเป็นสิว",
         "Water, Butylene Glycol, Glycerin, Pentaerythrityl Stearate ​Caprate ​Caprylate ​Adipate, 1,2-Hexanediol, Cetearyl Alcohol, Ammonium Acryloyldimethyltaurate​ Copolymer, Caprylic ​Capric Glycerides, Glyceryl Stearate Citrate, Sorbitan Stearate, Stearic Acid, Carbomer, Myristoyl/​Palmitoyl Oxostearamide/​Arachamide MEA, Sea Water, Phytosterols, Helianthus Annuus (Sunflower) Seed Oil, Palmitoyl Palmitamide Mea, Bis-Capryloyloxypalmitamido Isopropanol, N-Decanoyl Serinol, Sodium Hyaluronate, Tanacetum Annuum Flower Oil, Anthemis Nobilis Flower Extract, Salvia Officinalis (Sage) Oil, Pogostemon Cablin Oil, Elettaria Cardamomum Seed Oil, Mentha Arvensis Leaf Oil, Anthemis Nobilis Flower Oil, Juniperus Mexicana Oil, Leucine, Azulene, Lysine, Phenylalanine, Threonine, Valine",
         390.00,
-        "โลชั่นเนื้อเจลบางเบา ให้ความชุ่มชื้น ปลอบประโลมผิวแพ้ง่าย"
+        "โลชั่นเนื้อเจลบางเบา ให้ความชุ่มชื้น ปลอบประโลมผิวแพ้ง่าย",
         "https://incidecoder-content.storage.googleapis.com/1a39793f-25e6-497f-947b-6233d25290ef/products/atopalm-soothing-gel-lotion-5/atopalm-soothing-gel-lotion-5_front_photo_300x300@2x.webp",
         "https://s.shopee.co.th/1qcXv86SMF"
     )
@@ -570,6 +570,7 @@ if __name__ == "__main__":
         "ผิวแห้ง, ผิวบอบบาง, ผิวแพ้ง่าย",
         "WATER/AQUA, CAPRYLIC/CAPRIC TRIGLYCERIDE, GLYCERIN, BUTYLENE GLYCOL, PENTYLENE GLYCOL, CETEARYL ALCOHOL, PENTAERYTHRITYL STEARATE/CAPRATE/CAPRYLATE/ADIPATE , SIMMONDSIA CHINENSIS (JOJOBA) SEED OIL, POLYGLYCERYL-5 STEARATE, SODIUM HYALURONATE, STEARIC ACID, GLYCERYL STEARATE, SORBITAN STEARATE , BUTYROSPERMUM PARKII (SHEA) BUTTER, HYDROGENATED VEGETABLE OIL, TOCOPHEROL, PALMITOYL, PALMITAMIDE MEA, BIS-CAPRYLOYLOXYPALMITAMIDO ISOPROPANOL, N-DECANOYL SERINOL, ALLANTOIN, HOUTTUYNIA CORDATA EXTRACT, LEUCINE, LYSINE, PHENYLALANINE, THREONINE, VALINE, PHYTOSTEROLS, CARBOMER, PHYTOSTERYL OLEATE, XANTHAN GUM, SODIUM PHYTATE, ARGININE, HELIANTHUS ANNUUS (SUNFLOWER) SEED OIL, SALVIA OFFICINALIS (SAGE) OIL, ELETTARIA CARDAMOMUM SEED OIL, BETA-GLUCAN, POGOSTEMON CABLIN OIL, JUNIPERUS MEXICANA OIL, JUNIPERUS COMMUNIS FRUIT OIL, ANTHEMIS NOBILIS FLOWER OIL, 1,2-HEXANEDIOL, CAPRYLIC/CAPRIC GLYCERIDE",
         490.00,
+        "มอยส์เจอไรเซอร์สูตรเข้มข้น ช่วยเสริมเกราะป้องกันผิว เหมาะสำหรับผิวแห้งและแพ้ง่าย",
         "https://medias.watsons.co.th/publishing/WTCTH-321053-swatch-zoom.jpg?version=1758137429",
         "https://s.shopee.co.th/1BMr83rY7D"
     )
