@@ -205,6 +205,13 @@ with st.sidebar:
         clear_chat_history(device_id, user_name)
         st.session_state.messages = []
         st.rerun()
+    # เพิ่มใน st.sidebar ของ app.py
+with st.sidebar.expander("🛠️ Debug: Prompt + Few-Shot ล่าสุด"):
+    few_shot_check = get_few_shot_examples(limit=3)
+    if few_shot_check:
+        st.code(few_shot_check, language="markdown")
+    else:
+        st.warning("⚠️ ยังไม่มีเคส 👍 ใน Supabase หรือยังดึงข้อมูลไม่ได้")
 
 # ==========================================
 # 4. ประกอบ System Prompt (ข้อมูลโปรไฟล์ + คลังสินค้า Supabase)
