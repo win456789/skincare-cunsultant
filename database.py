@@ -530,3 +530,45 @@ if __name__ == "__main__":
         "https://down-th.img.susercontent.com/file/th-11134207-81ztf-msk0vsrwfk7e6f",
         "https://s.shopee.co.th/4qG9SaAzck"
     )
+    add_new_product(
+        "Bioderma sebium serum",
+        "Bioderma", 
+        "Serum",
+        "ผิวมัน, ผิวผสม, ผิวอักเสบ, ผิวเป็นสิวง่าย, สิวผด, สิวอุดตัน, รูขุมขนกว้าง, ริ้วรอยแรกเริ่ม",
+        "Salicylic Acid หรือ BHA, Acetyl Glucosamine, Micro Hyaluronic Acid",
+        999.00,
+        "เป็นเซรั่มเข้มข้น สำหรับผิวที่มีปัญหาสิว รูขุมขนกว้าง และมีริ้วรอย",
+        "https://medias.watsons.co.th/publishing/WTCTH-309664-front-zoom.jpg?version=1781723891",
+        "https://s.shopee.co.th/5LCQ4dBxHO"
+    )
+    add_new_product(
+        "Sei skin save soothing serum",
+        "Sei skin", 
+        "Serum",
+        "ผิวแพ้ง่าย, ผิวอ่อนออน, ผิวเป็นสิว, ผิวแห้ง, เหมาะกับทุกผิว, ผิวเสียสมดุล, ผิวระคายเคืองง่าย", 
+        "Aqua, Niacinamide, Propanediol, Ethoxydiglycol, Butylene Glycol, Glycerin, Ammonium Acryloyldimethyltaurate/VP Copolymer,Arisaema Amurense Extract, Ethyhexylglycerin, Capparis Spinosa Fruit Extract, Citrus Aurantium Tachibana Peel Extract, Artemisia Capillaris Extract, Pueraria Lobata Root Extract, Citrus (Tangerine) Peel Extract, Glycine Soja(soybean)Seed Extract, Sophora Flavescens Root Extract, Glycyrrhiza Inflata Root Extract, Humulus Lupulus Extract, Maclura Cochinchinensis Leaf Extract, Salix Alba (willow) Bark Extract, Opuntia Ficus-indica Stem Extract, 1,2-Hexanediol, Solanum Lycopersicum (Tomata)Stem Fruit Extract, Cystoseira Tamariscifolia Extract, Scutellaria Baicalensis Root Extract, Phenoxyethanol, Maltodextrin, Olea (Olive) Leaf Extract, Disodium EDTA, Citric Acid, Ceramide NP, Hydrogenated Lecithin, Glyceryl Stearate, Dipropylene Glycol, Silica.",
+        690.00,
+        "มอยซ์เจอไรเซอร์เนื้อเซรั่มบางเบาไม่เหนอะหนะ ช่วยลดสาเหตุหลักๆในการเกิดสิว และป้องกันการเกิดสิวใหม่ด้วยการปรับสมดุลย์ไมโครไบโอมหรือแบคทีเรียบนผิวให้เป็นปกติมากยิ่งขึ้นด้วย Seboclear-mp ที่มีสาร bioflavonoids ช่วยลดการอักเสบ ต่อต้านอนุมูลอิสระ ลดการทำงานของต่อมไขมัน พร้อมส่วนผสมที่สำคัญอย่าง Niacinamide Ceramide Calisensix และ Senseryn ที่ช่วยการฟื้นฟูเกราะป้องกันผิว ลดการระคายเคือง แสบแดง หรืออาการแพ้ต่างๆ"
+        "https://down-th.img.susercontent.com/file/th-11134207-81zto-mmq3c7a1zwg153",
+        "https://s.shopee.co.th/4qG9UDiqsi"
+    )
+    add_new_product(
+        "Atopalm soothing gel lotion",
+        "Atopalm",
+        "Moisturizer",
+        "ิผิวมัน ผิวผสม ผิวแพ้ง่าย ผิวบอบบาง ผิวเป็นสิว",
+        "Water, Butylene Glycol, Glycerin, Pentaerythrityl Stearate ​Caprate ​Caprylate ​Adipate, 1,2-Hexanediol, Cetearyl Alcohol, Ammonium Acryloyldimethyltaurate​ Copolymer, Caprylic ​Capric Glycerides, Glyceryl Stearate Citrate, Sorbitan Stearate, Stearic Acid, Carbomer, Myristoyl/​Palmitoyl Oxostearamide/​Arachamide MEA, Sea Water, Phytosterols, Helianthus Annuus (Sunflower) Seed Oil, Palmitoyl Palmitamide Mea, Bis-Capryloyloxypalmitamido Isopropanol, N-Decanoyl Serinol, Sodium Hyaluronate, Tanacetum Annuum Flower Oil, Anthemis Nobilis Flower Extract, Salvia Officinalis (Sage) Oil, Pogostemon Cablin Oil, Elettaria Cardamomum Seed Oil, Mentha Arvensis Leaf Oil, Anthemis Nobilis Flower Oil, Juniperus Mexicana Oil, Leucine, Azulene, Lysine, Phenylalanine, Threonine, Valine",
+        390.00,
+        "https://incidecoder-content.storage.googleapis.com/1a39793f-25e6-497f-947b-6233d25290ef/products/atopalm-soothing-gel-lotion-5/atopalm-soothing-gel-lotion-5_front_photo_300x300@2x.webp",
+        "https://s.shopee.co.th/1qcXv86SMF"
+    )
+    add_new_product(
+        "Atopalm MLE",
+        "Atopalm",
+        "Moisturizer", 
+        "ผิวแห้ง, ผิวบอบบาง, ผิวแพ้ง่าย",
+        "WATER/AQUA, CAPRYLIC/CAPRIC TRIGLYCERIDE, GLYCERIN, BUTYLENE GLYCOL, PENTYLENE GLYCOL, CETEARYL ALCOHOL, PENTAERYTHRITYL STEARATE/CAPRATE/CAPRYLATE/ADIPATE , SIMMONDSIA CHINENSIS (JOJOBA) SEED OIL, POLYGLYCERYL-5 STEARATE, SODIUM HYALURONATE, STEARIC ACID, GLYCERYL STEARATE, SORBITAN STEARATE , BUTYROSPERMUM PARKII (SHEA) BUTTER, HYDROGENATED VEGETABLE OIL, TOCOPHEROL, PALMITOYL, PALMITAMIDE MEA, BIS-CAPRYLOYLOXYPALMITAMIDO ISOPROPANOL, N-DECANOYL SERINOL, ALLANTOIN, HOUTTUYNIA CORDATA EXTRACT, LEUCINE, LYSINE, PHENYLALANINE, THREONINE, VALINE, PHYTOSTEROLS, CARBOMER, PHYTOSTERYL OLEATE, XANTHAN GUM, SODIUM PHYTATE, ARGININE, HELIANTHUS ANNUUS (SUNFLOWER) SEED OIL, SALVIA OFFICINALIS (SAGE) OIL, ELETTARIA CARDAMOMUM SEED OIL, BETA-GLUCAN, POGOSTEMON CABLIN OIL, JUNIPERUS MEXICANA OIL, JUNIPERUS COMMUNIS FRUIT OIL, ANTHEMIS NOBILIS FLOWER OIL, 1,2-HEXANEDIOL, CAPRYLIC/CAPRIC GLYCERIDE",
+        490.00,
+        "https://medias.watsons.co.th/publishing/WTCTH-321053-swatch-zoom.jpg?version=1758137429",
+        "https://s.shopee.co.th/1BMr83rY7D"
+    )
