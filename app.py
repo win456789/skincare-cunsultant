@@ -82,6 +82,11 @@ base_system_prompt = """
    - **ห้าม** แนะนำสินค้าที่มีส่วนผสมที่ผู้ใช้ระบุว่าแพ้เด็ดขาด
 5. **อาการเสี่ยงทางการแพทย์**:
    - หากผู้ใช้มีอาการรุนแรงหรือเป็นโรคผิวหนัง เช่น โรคสะเก็ดเงิน เริม ให้แนะนำให้พบแพทย์ผิวหนังเท่านั้น
+6. **จำกัดงบประมาณต่อชิ้นอย่างเคร่งครัด (Strict Budget Limit)**:
+   - ตรวจสอบราคาสินค้าจากคลังสินค้าเทียบกับ [งบประมาณสูงสุดต่อชิ้น] ของผู้ใช้
+   - **ห้าม** แนะนำสินค้าที่มีราคาสูงกว่างบประมาณต่อชิ้นที่ผู้ใช้ระบุเด็ดขาด!
+   - หากสินค้าตัวไหนราคาสูงกว่างบ ให้ตัดออกจากการนำเสนอทันที
+   - หากในคลังไม่มีสินค้าตัวไหนอยู่ในงบ ให้แจ้งผู้ใช้ตรงๆ เช่น *"สำหรับขั้นตอนนี้ สินค้าในคลังของเราจะมีราคาเกินงบประมาณที่คุณตั้งไว้..."*
 """
 
 components.html("""
@@ -107,7 +112,7 @@ components.html("""
 url_device_id = st.query_params.get("device", "")
 
 # ==========================================
-# 3. ส่วน Sidebar (จัดการ Profile)
+# 3. ส่วน Sidebar (จัดการ Profile & Settings)
 # ==========================================
 with st.sidebar:
     st.header("👤 โปรไฟล์ผู้ใช้งาน")
@@ -141,6 +146,7 @@ with st.sidebar:
 
     default_concerns = existing_profile["skin_concerns"] if existing_profile else ""
     default_allergies = existing_profile["allergies"] if existing_profile else ""
+    default_budget = existing_profile.get("max_budget", 0) if existing_profile else 0
 
     with st.form("profile_form"):
         skin_options = ["ผิวมัน", "ผิวแห้ง", "ผิวผสม", "ผิวแพ้ง่าย"]
@@ -152,18 +158,31 @@ with st.sidebar:
         if submitted:
             if user_name and user_name.strip() != "" and user_name != "➕ สร้างโปรไฟล์ใหม่":
                 skin_type_str = ", ".join(selected_skin_types) if selected_skin_types else "ไม่ระบุ"
-                save_or_update_user(device_id, user_name.strip(), skin_type_str, skin_concerns, allergies)
-                st.success(f"บันทึกโปรไฟล์ของ '{user_name}' (บนเครื่อง {device_id}) เรียบร้อย!")
+                current_live_budget = st.session_state.get("live_budget", default_budget)
+                save_or_update_user(device_id, user_name.strip(), skin_type_str, skin_concerns, allergies, current_live_budget)
+                st.success(f"บันทึกโปรไฟล์ของ '{user_name}' เรียบร้อย!")
                 time.sleep(1)
                 st.rerun()
             else:
                 st.error("⚠️ กรุณากรอกชื่อในช่อง 'กรอกชื่อใหม่' ก่อนกดบันทึกครับ")
-                
-        
-st.divider()
-if st.button("🧹 ล้างประวัติการคุยทั้งหมด", use_container_width=True):
-    st.session_state.messages = []
-    st.rerun()
+    
+    # 🟢 ตัวเลื่อนงบประมาณ Real-time (อยู่นอก st.form เพื่อให้เลื่อนแล้วกรองทันที)
+    st.divider()
+    max_budget = st.slider(
+        "งบประมาณสูงสุดต่อชิ้น (บาท):",
+        min_value=0,
+        max_value=5000,
+        value=int(default_budget),
+        step=100,
+        key="live_budget"
+    )
+
+    # 🟢 ปุ่มล้างประวัติการสนทนา (อยู่ใน Sidebar)
+    st.divider()
+    if st.button("🧹 ล้างประวัติการคุยทั้งหมด", use_container_width=True):
+        st.session_state.messages = []
+        st.rerun()
+
 # ==========================================
 # 4. ประกอบ System Prompt (ข้อมูลโปรไฟล์ + คลังสินค้า Supabase)
 # ==========================================
@@ -176,13 +195,21 @@ if current_profile:
 - สภาพผิว: {current_profile['skin_type']}
 - ปัญหาผิวหลัก: {current_profile['skin_concerns']}
 - ส่วนผสมที่แพ้/ต้องหลีกเลี่ยง: {current_profile['allergies']}
-*คำแนะนำ*: ให้วิเคราะห์และเลือกผลิตภัณฑ์ที่เหมาะกับสภาพผิวและปัญหาผิวของผู้ใช้นี้โดยเฉพาะ และห้ามแนะนำสินค้าที่มีส่วนผสมที่ผู้ใช้แพ้เด็ดขาด
+- งบประมาณสูงสุดต่อชิ้น: {max_budget} บาท
+*คำแนะนำ*: ให้วิเคราะห์และเลือกผลิตภัณฑ์ที่เหมาะกับสภาพผิวและปัญหาผิวของผู้ใช้นี้โดยเฉพาะ และห้ามแนะนำสินค้าที่มีส่วนผสมที่ผู้ใช้แพ้หรือราคาเกิน {max_budget} บาทเด็ดขาด
 """
 else:
     user_context = ""
 
-# ดึงข้อมูลสินค้าจาก Supabase
-products_context, product_count = get_all_products_context()
+# 🟢 ดึงข้อมูลสินค้าจาก Supabase โดยส่งงบจาก slider (max_budget) เข้าไปกรอง Real-time
+user_budget = max_budget
+products_context, product_count = get_all_products_context(max_budget=user_budget)
+
+# แสดงแถบ Debug บอกจำนวนสินค้าใน Sidebar
+st.sidebar.caption(f"🔍 Debug: งบปัจจุบัน = {user_budget} บาท | สินค้าที่ผ่านกรอง = {product_count} ชิ้น")
+
+if product_count == 0 and user_budget > 0:
+    products_context += f"\n⚠️ หมายเหตุ: ขณะนี้ไม่มีสินค้าในคลังที่ราคาไม่เกิน {user_budget} บาท"
 
 system_prompt = f"{base_system_prompt}\n{user_context}\n{products_context}"
 

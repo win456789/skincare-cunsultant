@@ -18,14 +18,15 @@ def get_all_usernames(device_id="default_device"):
     res = supabase.table("users").select("name").eq("device_id", device_id).execute()
     return [row["name"] for row in res.data]
 
-def save_or_update_user(device_id, name, skin_type, skin_concerns, allergies):
+def save_or_update_user(device_id, name, skin_type, skin_concerns, allergies, max_budget=0):
     data = {
         "device_id": device_id,
         "name": name,
         "skin_type": skin_type,
         "skin_concerns": skin_concerns,
-        "allergies": allergies
-    }
+        "allergies": allergies,
+        "max_budget": max_budget
+        }
     supabase.table("users").upsert(data, on_conflict="device_id, name").execute()
 
 def get_user_profile(device_id, name):
@@ -41,22 +42,34 @@ def delete_user_profile(device_id, name):
 # ==========================================
 # 2. ฟังก์ชันจัดการ Database สินค้า (Supabase)
 # ==========================================
-def get_all_products_context():
+def get_all_products_context(max_budget=0):
+    response = supabase.table("products").select("*").execute()
+    products = response.data or []
+    
+    # 🟢 แปลงค่างบเป็น int อย่างปลอดภัย
     try:
-        res = supabase.table("products").select("brand, name, category, suitable_skin, active_ingredients, price, image_url, purchase_channel").execute()
-        rows = res.data
-        if not rows:
-            return "ไม่มีสินค้าอยู่ในคลัง", 0
-
-        catalog_text = "\n\n=== [คลังสินค้าสกินแคร์ที่อนุญาตให้แนะนำได้เท่านั้น] ===\n"
-        for idx, r in enumerate(rows, 1):
-            channel = r.get("purchase_channel") or "ไม่ระบุ"
-            catalog_text += f"{idx}. แบรนด์: {r['brand']} | ชื่อสินค้า: {r['name']} | หมวดหมู่: {r['category']} | สภาพผิวที่เหมาะ: {r['suitable_skin']} | สารสำคัญ: {r['active_ingredients']} | ราคา: {r['price']} บาท | Image_URL: {r['image_url']} | ช่องทางซื้อ: {channel}\n"
+        max_budget = int(max_budget) if max_budget else 0
+    except (ValueError, TypeError):
+        max_budget = 0
+    
+    # 🟢 Hard Filtering + แปลงราคาสินค้าเป็น int ป้องกัน String Comparison
+    if max_budget > 0:
+        filtered_products = []
+        for p in products:
+            try:
+                # แปลงราคาใน DB เป็นตัวเลข (เผื่อใน DB เก็บเป็น string หรือ float)
+                price = int(float(p.get("price", 0)))
+                if price <= max_budget:
+                    filtered_products.append(p)
+            except (ValueError, TypeError):
+                continue
+        products = filtered_products
+    
+    context_text = f"\n[รายการสินค้าสกินแคร์ในคลังของเราที่ราคาไม่เกิน {max_budget} บาท]:\n" if max_budget > 0 else "\n[รายการสินค้าสกินแคร์ในคลังของเราทั้งหมด]:\n"
+    for p in products:
+        context_text += f"- ชื่อ: {p.get('name')}, แบรนด์: {p.get('brand')}, หมวดหมู่: {p.get('category')}, ราคา: {p.get('price')} บาท, ลิงก์: {p.get('shopee_url')}, รูปภาพ: {p.get('image_url')}\n"
         
-        catalog_text += "======================================================\n"
-        return catalog_text, len(rows)
-    except Exception as e:
-        return f"เกิดข้อผิดพลาด: {e}", 0
+    return context_text, len(products)
 
 def clear_products_table():
     """ล้างข้อมูลสินค้าทั้งหมดใน Supabase เพื่อป้องกันข้อมูลซ้ำ"""
@@ -285,7 +298,7 @@ if __name__ == "__main__":
         "Green tea extract, Potentilla Erecta Root Extract, Collagen, Super Hyaluronic acid, Glycerin,High-fructose corn syrup, Dipotassium glycyrrhizate",
         425.00,
         "เพอร์เฟค ยูวี ซันสกรีน สกินแคร์ มิลค์ เอ็นเอ เอสพีเอฟ 50+ พีเอ++++กันแดดเนื้อน้ำนม บางเบา ซึมซาบเร็ว สำหรับผิวหน้า ปกป้องผิวจากรังสี UVพร้อมลดเลือนจุดด่างดำ ฝ้าแดด เผยผิวสวย ฉ่ำโกล์ว ชุ่มชื้นยาวนาน 8 ชั่วโมง",
-        "https://s2.konvy.com/static/team/2026/0327/17746071957932_600x600.jpg",
+        "https://medias.watsons.co.th/publishing/WTCTH-309592-side-zoom.jpg?version=1729019405",
         "https://s.shopee.co.th/4qG7WZhS02"
     )
 
