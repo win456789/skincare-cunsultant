@@ -129,7 +129,7 @@ base_system_prompt = """
 url_device_id = st.query_params.get("device", "")
 
 # ==========================================
-# 3. ส่วน Sidebar (จัดการ Profile, Searchable Inventory & Settings)
+# 3. ส่วน Sidebar (จัดการ Profile, Inventory & Settings)
 # ==========================================
 with st.sidebar:
   st.header("👤 โปรไฟล์ผู้ใช้งาน")
@@ -182,105 +182,75 @@ with st.sidebar:
       existing_profile.get("max_budget", 0) if existing_profile else 0
   )
 
-  # ---------------------------------------------------------
-  # 🟢 [อยู่นอก Form] ระบบค้นหาและเลือก Inventory แบบ Real-time
-  # ---------------------------------------------------------
+  # 🟢 1. กรอกข้อมูลสภาพผิว
+  st.markdown("---")
+  skin_options = ["ผิวมัน", "ผิวแห้ง", "ผิวผสม", "ผิวแพ้ง่าย"]
+  selected_skin_types = st.multiselect(
+      "สภาพผิว:", options=skin_options, default=default_type_list
+  )
+  skin_concerns = st.text_input("ปัญหาผิวหลัก:", value=default_concerns)
+  allergies = st.text_input(
+      "ส่วนผสมที่แพ้ / อยากเลี่ยง:", value=default_allergies
+  )
+
+  # 🟢 2. เลือก Inventory
   st.markdown("---")
   st.subheader("🧴 My Skincare Inventory")
 
-  profile_session_key = f"inv_{device_id}_{user_name}"
-  if st.session_state.get("active_inv_key") != profile_session_key:
-    st.session_state.active_inv_key = profile_session_key
-    raw_inv = (
-        get_user_inventory(device_id, user_name)
-        if user_name and user_name != "➕ สร้างโปรไฟล์ใหม่"
-        else []
-    )
-    all_product_options = get_all_product_names()
-    # กรองเฉพาะรายการสินค้าที่มีจริงในคลังปัจจุบัน
-    st.session_state.current_user_inv = [
-        item for item in raw_inv if item in all_product_options
-    ]
-
-  search_kw = st.text_input(
-      "🔍 ค้นหาสินค้าในคลัง:",
-      placeholder="พิมพ์ชื่อสินค้า หรือ แบรนด์...",
-      key="inv_search_input",
+  all_product_options = get_all_product_names()
+  raw_inv = (
+      get_user_inventory(device_id, user_name)
+      if user_name and user_name != "➕ สร้างโปรไฟล์ใหม่"
+      else []
   )
-
-  all_products = get_all_product_names()
-
-  if search_kw.strip():
-    matched_products = [
-        p for p in all_products if search_kw.lower() in p.lower()
-    ]
-  else:
-    matched_products = all_products
-
-  # รวมรายการที่เลือกไว้เดิม + รายการที่ค้นหาเจอ (ป้องกันของที่เลือกไว้หาย)
-  display_options = sorted(
-      list(set(matched_products + st.session_state.current_user_inv))
-  )
+  current_inventory = [
+      item for item in raw_inv if item in all_product_options
+  ]
 
   selected_inventory = st.multiselect(
-      "รายการสกินแคร์ที่คุณมีอยู่ในมือ:",
-      options=display_options,
-      default=st.session_state.current_user_inv,
-      help="พิมพ์ค้นหาในช่องด้านบน หรือคลิกเลือกจากรายการได้เลย",
+      "เลือกสกินแคร์ที่คุณมี:",
+      options=all_product_options,
+      default=current_inventory,
+      help="คลิกที่กล่องแล้วพิมพ์ชื่อสินค้าหรือแบรนด์เพื่อค้นหาได้ทันที",
   )
 
-  # ซิงก์ค่ากลับเข้า Session State ทันที
   st.session_state.current_user_inv = selected_inventory
-  st.caption(
-      f"📦 สกินแคร์ในครอบครองขณะนี้: **{len(selected_inventory)}** ชิ้น"
-  )
+  st.caption(f"📦 สกินแคร์ในครอบครองขณะนี้: **{len(selected_inventory)}** ชิ้น")
 
-  # ---------------------------------------------------------
-  # 🟢 ฟอร์มบันทึกข้อมูลสภาพผิว & บันทึก Inventory
-  # ---------------------------------------------------------
+  # 🟢 3. ปุ่มบันทึกโปรไฟล์ (อยู่ใต้กล่องเลือกสกินแคร์)
   st.markdown("---")
-  with st.form("profile_form"):
-    skin_options = ["ผิวมัน", "ผิวแห้ง", "ผิวผสม", "ผิวแพ้ง่าย"]
-    selected_skin_types = st.multiselect(
-        "สภาพผิว:", options=skin_options, default=default_type_list
-    )
-    skin_concerns = st.text_input("ปัญหาผิวหลัก:", value=default_concerns)
-    allergies = st.text_input(
-        "ส่วนผสมที่แพ้ / อยากเลี่ยง:", value=default_allergies
-    )
+  submitted = st.button("💾 บันทึกโปรไฟล์", type="primary", use_container_width=True)
+  if submitted:
+    if (
+        user_name
+        and user_name.strip() != ""
+        and user_name != "➕ สร้างโปรไฟล์ใหม่"
+    ):
+      skin_type_str = (
+          ", ".join(selected_skin_types) if selected_skin_types else "ไม่ระบุ"
+      )
+      current_live_budget = st.session_state.get(
+          "live_budget", default_budget
+      )
 
-    submitted = st.form_submit_button("💾 บันทึกโปรไฟล์")
-    if submitted:
-      if (
-          user_name
-          and user_name.strip() != ""
-          and user_name != "➕ สร้างโปรไฟล์ใหม่"
-      ):
-        skin_type_str = (
-            ", ".join(selected_skin_types) if selected_skin_types else "ไม่ระบุ"
-        )
-        current_live_budget = st.session_state.get(
-            "live_budget", default_budget
-        )
+      # บันทึกโปรไฟล์ และ Inventory ลง Supabase
+      save_or_update_user(
+          device_id,
+          user_name.strip(),
+          skin_type_str,
+          skin_concerns,
+          allergies,
+          current_live_budget,
+      )
+      save_user_inventory(
+          device_id, user_name.strip(), st.session_state.current_user_inv
+      )
 
-        # 🟢 บันทึกโปรไฟล์ และ Inventory จาก Session State ลง Supabase
-        save_or_update_user(
-            device_id,
-            user_name.strip(),
-            skin_type_str,
-            skin_concerns,
-            allergies,
-            current_live_budget,
-        )
-        save_user_inventory(
-            device_id, user_name.strip(), st.session_state.current_user_inv
-        )
-
-        st.success(f"บันทึกโปรไฟล์และสกินแคร์ของ '{user_name}' เรียบร้อย!")
-        time.sleep(1)
-        st.rerun()
-      else:
-        st.error("⚠️ กรุณากรอกชื่อในช่อง 'กรอกชื่อใหม่' ก่อนกดบันทึกครับ")
+      st.success(f"บันทึกโปรไฟล์และสกินแคร์ของ '{user_name}' เรียบร้อย!")
+      time.sleep(1)
+      st.rerun()
+    else:
+      st.error("⚠️ กรุณากรอกชื่อในช่อง 'กรอกชื่อใหม่' ก่อนกดบันทึกครับ")
 
   st.divider()
   max_budget = st.slider(
@@ -298,13 +268,6 @@ with st.sidebar:
     st.session_state.messages = []
     st.rerun()
 
-  st.divider()
-  with st.expander("🛠️ Debug: Prompt + Few-Shot ล่าสุด"):
-    few_shot_check = get_few_shot_examples(limit=2)
-    if few_shot_check:
-      st.code(few_shot_check, language="markdown")
-    else:
-      st.warning("⚠️ ยังไม่มีเคส Feedback ใน Supabase")
 
 # ==========================================
 # 4. ประกอบ System Prompt (ข้อมูลโปรไฟล์ + Inventory + คลังสินค้า Supabase)
