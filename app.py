@@ -146,12 +146,21 @@ with st.sidebar:
   all_users = get_all_usernames(device_id)
   options = ["➕ สร้างโปรไฟล์ใหม่"] + all_users
 
-  selected_option = st.selectbox("เลือกโปรไฟล์:", options)
+  # 🟢 คำนวณ index ล่าสุดเพื่อให้หลังเซฟ/รีรัน ยังล็อกอยู่ที่ชื่อโปรไฟล์เดิม
+  default_idx = 0
+  if (
+      "selected_user" in st.session_state
+      and st.session_state.selected_user in options
+  ):
+    default_idx = options.index(st.session_state.selected_user)
+
+  selected_option = st.selectbox("เลือกโปรไฟล์:", options, index=default_idx)
 
   if selected_option == "➕ สร้างโปรไฟล์ใหม่":
     user_name = st.text_input("กรอกชื่อใหม่:", placeholder="เช่น วิน, ปลื้ม")
   else:
     user_name = selected_option
+    st.session_state.selected_user = selected_option
     if st.button(
         f"🗑️ ลบโปรไฟล์ '{user_name}'",
         type="secondary",
@@ -159,6 +168,8 @@ with st.sidebar:
     ):
       delete_user_profile(device_id, user_name)
       clear_chat_history(device_id, user_name)
+      if "selected_user" in st.session_state:
+        del st.session_state.selected_user
       st.success(f"ลบโปรไฟล์ '{user_name}' เรียบร้อย!")
       time.sleep(1)
       st.rerun()
@@ -226,6 +237,7 @@ with st.sidebar:
         and user_name.strip() != ""
         and user_name != "➕ สร้างโปรไฟล์ใหม่"
     ):
+      target_name = user_name.strip()
       skin_type_str = (
           ", ".join(selected_skin_types) if selected_skin_types else "ไม่ระบุ"
       )
@@ -236,17 +248,20 @@ with st.sidebar:
       # บันทึกโปรไฟล์ และ Inventory ลง Supabase
       save_or_update_user(
           device_id,
-          user_name.strip(),
+          target_name,
           skin_type_str,
           skin_concerns,
           allergies,
           current_live_budget,
       )
       save_user_inventory(
-          device_id, user_name.strip(), st.session_state.current_user_inv
+          device_id, target_name, st.session_state.current_user_inv
       )
 
-      st.success(f"บันทึกโปรไฟล์และสกินแคร์ของ '{user_name}' เรียบร้อย!")
+      # 🟢 ล็อกชื่อโปรไฟล์ไว้ใน Session เพื่อให้ Selectbox ยังคงเลือกชื่อเดิมหลัง rerun
+      st.session_state.selected_user = target_name
+
+      st.success(f"บันทึกโปรไฟล์และสกินแคร์ของ '{target_name}' เรียบร้อย!")
       time.sleep(1)
       st.rerun()
     else:
