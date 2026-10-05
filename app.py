@@ -6,15 +6,18 @@ from google import genai
 from google.genai import types
 from google.genai.errors import ServerError, APIError
 
-# 🟢 ดึงฟังก์ชันจัดการโปรไฟล์ คลังสินค้า และ Dynamic Few-Shot จาก Supabase (database.py)
+# 🟢 ดึงฟังก์ชันจัดการโปรไฟล์ คลังสินค้า Inventory และ Dynamic Few-Shot จาก Supabase (database.py)
 from database import (
-    delete_user_profile, 
-    get_all_usernames, 
+    delete_user_profile,
+    get_all_product_names, 
+    get_all_usernames,
+    get_user_inventory, 
     get_user_profile,
     save_feedback, 
     save_or_update_user,
     get_all_products_context,
-    get_few_shot_examples
+    get_few_shot_examples,
+    save_user_inventory
 )
 
 DB_NAME = "skincare_app.db"
@@ -109,26 +112,7 @@ base_system_prompt = """
   [🛒 สั่งซื้อบน Shopee](URL) (ดึงลิงก์จาก Database เท่านั้น)
 """
 
-components.html("""
-    <script>
-    try {
-        let devId = localStorage.getItem("skincare_device_id");
-        if (!devId) {
-            devId = 'dev_' + Math.random().toString(36).substring(2, 7);
-            localStorage.setItem("skincare_device_id", devId);
-        }
-        const parentUrl = new URL(window.parent.location.href);
-        if (parentUrl.searchParams.get("device") !== devId) {
-            parentUrl.searchParams.set("device", devId);
-            window.open(parentUrl.href, "_parent");
-        }
-    } catch (e) {
-        console.log("Device ID Auto-detect skipped by browser security");
-    }
-    </script>
-""", height=0)
 
-# ดึง device_id จาก URL query parameter
 url_device_id = st.query_params.get("device", "")
 
 # ==========================================
@@ -169,25 +153,41 @@ with st.sidebar:
     default_allergies = existing_profile["allergies"] if existing_profile else ""
     default_budget = existing_profile.get("max_budget", 0) if existing_profile else 0
 
+    # 🟢 ดึงข้อมูลเตรียมไว้สำหรับ Multiselect Inventory
+    all_product_options = get_all_product_names()
+    current_inventory = get_user_inventory(device_id, user_name) if user_name and user_name != "➕ สร้างโปรไฟล์ใหม่" else []
+
     with st.form("profile_form"):
         skin_options = ["ผิวมัน", "ผิวแห้ง", "ผิวผสม", "ผิวแพ้ง่าย"]
         selected_skin_types = st.multiselect("สภาพผิว:", options=skin_options, default=default_type_list)
         skin_concerns = st.text_input("ปัญหาผิวหลัก:", value=default_concerns)
         allergies = st.text_input("ส่วนผสมที่แพ้ / อยากเลี่ยง:", value=default_allergies)
 
+        st.markdown("---")
+        st.subheader("🧴 Inventory")
+        selected_inventory = st.multiselect(
+            "เลือกสกินแคร์ที่คุณมี:",
+            options=all_product_options,
+            default=current_inventory,
+            help="AI จะพยายามนำสกินแคร์ที่คุณมีมาจัดลงเซตรูทีนก่อน หากขาดขั้นตอนไหนค่อยแนะนำเพิ่ม"
+        )
+
         submitted = st.form_submit_button("💾 บันทึกโปรไฟล์")
         if submitted:
             if user_name and user_name.strip() != "" and user_name != "➕ สร้างโปรไฟล์ใหม่":
                 skin_type_str = ", ".join(selected_skin_types) if selected_skin_types else "ไม่ระบุ"
                 current_live_budget = st.session_state.get("live_budget", default_budget)
+                
+                # 🟢 บันทึกโปรไฟล์ และ สกินแคร์ในครอบครอง (Inventory)
                 save_or_update_user(device_id, user_name.strip(), skin_type_str, skin_concerns, allergies, current_live_budget)
-                st.success(f"บันทึกโปรไฟล์ของ '{user_name}' เรียบร้อย!")
+                save_user_inventory(device_id, user_name.strip(), selected_inventory)
+                
+                st.success(f"บันทึกโปรไฟล์และสกินแคร์ของ '{user_name}' เรียบร้อย!")
                 time.sleep(1)
                 st.rerun()
             else:
                 st.error("⚠️ กรุณากรอกชื่อในช่อง 'กรอกชื่อใหม่' ก่อนกดบันทึกครับ")
     
-    # ตัวเลื่อนงบประมาณ Real-time
     st.divider()
     max_budget = st.slider(
         "งบประมาณสูงสุดต่อชิ้น (บาท):",
@@ -198,14 +198,12 @@ with st.sidebar:
         key="live_budget"
     )
 
-    # ปุ่มล้างประวัติการสนทนาเฉพาะโปรไฟล์นี้
     st.divider()
     if st.button("🧹 ล้างประวัติการคุยของโปรไฟล์นี้", use_container_width=True):
         clear_chat_history(device_id, user_name)
         st.session_state.messages = []
         st.rerun()
 
-    # 🟢 กล่อง Debug เช็ก Few-Shot ใน Sidebar
     st.divider()
     with st.expander("🛠️ Debug: Prompt + Few-Shot ล่าสุด"):
         few_shot_check = get_few_shot_examples(limit=2)
@@ -215,9 +213,12 @@ with st.sidebar:
             st.warning("⚠️ ยังไม่มีเคส Feedback ใน Supabase")
 
 # ==========================================
-# 4. ประกอบ System Prompt (ข้อมูลโปรไฟล์ + คลังสินค้า Supabase)
+# 4. ประกอบ System Prompt (ข้อมูลโปรไฟล์ + Inventory + คลังสินค้า Supabase)
 # ==========================================
 current_profile = get_user_profile(device_id, user_name) if user_name and user_name != "➕ สร้างโปรไฟล์ใหม่" else None
+user_inventory_items = get_user_inventory(device_id, user_name) if user_name and user_name != "➕ สร้างโปรไฟล์ใหม่" else []
+
+inventory_text = ", ".join(user_inventory_items) if user_inventory_items else "ไม่มี (ยังไม่มีสกินแคร์ในครอบครอง)"
 
 if current_profile:
     user_context = f"""
@@ -226,8 +227,12 @@ if current_profile:
 - สภาพผิว: {current_profile['skin_type']}
 - ปัญหาผิวหลัก: {current_profile['skin_concerns']}
 - ส่วนผสมที่แพ้/ต้องหลีกเลี่ยง: {current_profile['allergies']}
-- งบประมาณสูงสุดต่อชิ้น: {max_budget} บาท
-*คำแนะนำ*: ให้วิเคราะห์และเลือกผลิตภัณฑ์ที่เหมาะกับสภาพผิวและปัญหาผิวของผู้ใช้นี้โดยเฉพาะ และห้ามแนะนำสินค้าที่มีส่วนผสมที่ผู้ใช้แพ้หรือราคาเกิน {max_budget} บาทเด็ดขาด
+- งบประมาณสูงสุดต่อชิ้น (สำหรับซื้อเพิ่ม): {max_budget} บาท
+- สกินแคร์ที่มีอยู่แล้วในมือ (Inventory): {inventory_text}
+
+🚨 [เงื่อนไขการใช้ INVENTORY]:
+- หากผู้ใช้มีสกินแคร์ในมือที่เหมาะกับสภาพผิวและปัญหาผิว ให้ **จัดสกินแคร์ที่มีอยู่แล้วเข้าลงในเซตรูทีน (เช้า/ก่อนนอน) ก่อนเป็นอันดับแรก** (ระบุให้ชัดเจนว่า *(ใช้ของที่มีอยู่แล้ว)*)
+- หากขั้นตอนไหนผู้ใช้ยังไม่มี หรือของที่มีอยู่ไม่ตอบโจทย์/มีสารแพ้ ค่อยเลือกแนะนำสินค้าจากคลังสินค้าเพิ่ม (ระบุว่าเป็น *(แนะนำซื้อเพิ่ม)*)
 """
 else:
     user_context = ""
@@ -281,18 +286,14 @@ for idx, message in enumerate(st.session_state.messages):
 
 # 5.2 กล่องรับข้อความใหม่ และประมวลผล Gemini API
 if user_input := st.chat_input("พิมพ์ปรึกษาปัญหาผิว หรือถามเรื่องสกินแคร์ที่นี่..."):
-    # 1. บันทึกข้อความผู้ใช้ลง SQLite และ session_state
     save_message(device_id, user_name, "user", user_input)
     st.session_state.messages.append({"role": "user", "content": user_input})
 
-    # 2. วาดข้อความของผู้ใช้ค้างไว้บนหน้าจอทันที
     with st.chat_message("user"):
         st.markdown(user_input)
 
-    # 3. วาดช่องข้อความ AI พร้อมสถานะกำลังคิด
     with st.chat_message("assistant"):
         with st.spinner("ผู้ช่วยกำลังคิดคำตอบ..."):
-            # 🟢 ดึง Dynamic Few-Shot
             few_shot_context = get_few_shot_examples(limit=2)
             dynamic_system_prompt = f"{system_prompt}\n{few_shot_context}"
 
@@ -304,7 +305,7 @@ if user_input := st.chat_input("พิมพ์ปรึกษาปัญหา
                         contents=user_input,
                         config=types.GenerateContentConfig(
                             system_instruction=dynamic_system_prompt,
-                            temperature=0.7,  # 🟢 ปรับลดเป็น 0.4 เพื่อความแม่นยำในการคุมกฎคลังสินค้า
+                            temperature=0.4,
                         )
                     )
                     

@@ -2,6 +2,8 @@ import random
 import streamlit as st
 from supabase import create_client, Client
 
+
+
 # ดึงค่า URL และ Key จาก Secrets ของ Streamlit
 try:
     SUPABASE_URL = st.secrets.get("SUPABASE_URL") or st.secrets.get("NEXT_PUBLIC_SUPABASE_URL") or "https://uwdqzrcwimlrgabisimt.supabase.co"
@@ -161,7 +163,43 @@ def get_few_shot_examples(limit=2):
         print(f"⚠️ เกิดข้อผิดพลาดในการดึง Positive Feedback: {e}")
 
     return context
+# ==========================================
+# ฟังก์ชันจัดการ User Inventory (Supabase)
+# ==========================================
+def get_user_inventory(device_id, name):
+    """ดึงรายชื่อสกินแคร์ที่ผู้ใช้มีอยู่แล้ว"""
+    try:
+        res = supabase.table("user_inventory").select("product_name").eq("device_id", device_id).eq("user_name", name).execute()
+        return [row["product_name"] for row in (res.data or [])]
+    except Exception as e:
+        print(f"⚠️ Error getting inventory: {e}")
+        return []
 
+def save_user_inventory(device_id, name, product_names):
+    """บันทึกสกินแคร์ที่ผู้ใช้เลือก (ลบของเดิมแล้วลงใหม่)"""
+    try:
+        # ลบรายการเดิมของผู้ใช้รายนี้ก่อน
+        supabase.table("user_inventory").delete().eq("device_id", device_id).eq("user_name", name).execute()
+        
+        # บันทึกรายการใหม่
+        if product_names:
+            data = [
+                {"device_id": device_id, "user_name": name, "product_name": p_name}
+                for p_name in product_names
+            ]
+            supabase.table("user_inventory").insert(data).execute()
+        print(f"✅ บันทึก Inventory ของ '{name}' เรียบร้อยแล้ว")
+    except Exception as e:
+        print(f"❌ Error saving inventory: {e}")
+
+def get_all_product_names():
+    """ดึงรายชื่อสินค้าทั้งหมดในคลังมาใส่ใน Multiselect"""
+    try:
+        res = supabase.table("products").select("name").execute()
+        return [row["name"] for row in (res.data or [])]
+    except Exception as e:
+        print(f"⚠️ Error getting product names: {e}")
+        return []
 # ==========================================
 # 4. ส่วนรันเพิ่มข้อมูลสินค้าลง Supabase (Seeding)
 # ==========================================
