@@ -7,9 +7,6 @@ from google.genai import types
 from google.genai.errors import ServerError, APIError
 import supabase
 
-
-st.title("✅ Test App Streamlit Cloud")
-st.write("ถ้าเห็นข้อความนี้ แสดงว่าเซิร์ฟเวอร์รันได้ปกติครับ!")
 # 🟢 ดึงฟังก์ชันจัดการโปรไฟล์ คลังสินค้า Inventory และ Dynamic Few-Shot จาก Supabase (database.py)
 from database import (
     delete_user_profile,
