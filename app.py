@@ -204,15 +204,6 @@ with st.sidebar:
         clear_chat_history(device_id, user_name)
         st.session_state.messages = []
         st.rerun()
-
-    st.divider()
-    with st.expander("🛠️ Debug: Prompt + Few-Shot ล่าสุด"):
-        few_shot_check = get_few_shot_examples(limit=2)
-        if few_shot_check:
-            st.code(few_shot_check, language="markdown")
-        else:
-            st.warning("⚠️ ยังไม่มีเคส Feedback ใน Supabase")
-
 # ==========================================
 # 4. ประกอบ System Prompt (ข้อมูลโปรไฟล์ + Inventory + คลังสินค้า Supabase)
 # ==========================================
