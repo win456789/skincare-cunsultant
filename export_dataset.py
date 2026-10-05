@@ -16,8 +16,7 @@ try:
 except Exception as e:
     print("❌ ไม่พบ GEMINI_API_KEY ใน .streamlit/secrets.toml")
     print("💡 โปรดตรวจสอบว่ามีไฟล์ .streamlit/secrets.toml ในโฟลเดอร์โปรเจกต์แล้วหรือยัง")
-    raise e
-
+    raise 
 
 def generate_corrected_response(client, user_input, bad_ai_response, user_reason):
     """ส่งเคสที่ตอบผิดไปให้ Gemini แก้ไขคำตอบตามเหตุผลของผู้ใช้"""

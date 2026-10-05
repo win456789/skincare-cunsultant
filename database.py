@@ -200,6 +200,7 @@ def get_all_product_names():
     except Exception as e:
         print(f"⚠️ Error getting product names: {e}")
         return []
+
 # ==========================================
 # 4. ส่วนรันเพิ่มข้อมูลสินค้าลง Supabase (Seeding)
 # ==========================================

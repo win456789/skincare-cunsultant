@@ -112,15 +112,6 @@ base_system_prompt = """
   **ชื่อสินค้า** (แบรนด์) | ราคา: XX บาท | สารสำคัญ: XX
   [🛒 สั่งซื้อบน Shopee](URL) (ดึงลิงก์จาก Database เท่านั้น)
 """
-# ใน database.py
-@st.cache_data(ttl=300)  # ให้ Cache จำรายชื่อสินค้าไว้ 5 นาที
-def get_all_product_names():
-    try:
-        res = supabase.table("products").select("name").execute()
-        return [row["name"] for row in (res.data or [])]
-    except Exception as e:
-        print(f"⚠️ Error getting product names: {e}")
-        return []
 
 url_device_id = st.query_params.get("device", "")
 
