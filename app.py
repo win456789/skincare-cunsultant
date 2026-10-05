@@ -153,9 +153,10 @@ with st.sidebar:
     default_allergies = existing_profile["allergies"] if existing_profile else ""
     default_budget = existing_profile.get("max_budget", 0) if existing_profile else 0
 
-    # 🟢 ดึงข้อมูลเตรียมไว้สำหรับ Multiselect Inventory
+    # 🟢 ดึงข้อมูลเตรียมไว้สำหรับ Multiselect Inventory (พร้อมกรองชื่อสินค้าที่อาจโดนลบ)
     all_product_options = get_all_product_names()
-    current_inventory = get_user_inventory(device_id, user_name) if user_name and user_name != "➕ สร้างโปรไฟล์ใหม่" else []
+    raw_inventory = get_user_inventory(device_id, user_name) if user_name and user_name != "➕ สร้างโปรไฟล์ใหม่" else []
+    current_inventory = [item for item in raw_inventory if item in all_product_options]
 
     with st.form("profile_form"):
         skin_options = ["ผิวมัน", "ผิวแห้ง", "ผิวผสม", "ผิวแพ้ง่าย"]
